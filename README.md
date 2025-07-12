@@ -91,7 +91,7 @@ sudo dd if=2024-10-22-raspios-bookworm-arm64-lite.img of=[datoteka uređaja koja
 
 ### Konfiguracija bez monitora i tipkovnice
 
-Ako se želi Raspberry Pi OS konfigurirati bez monitora i tipkovnice spojenih na njega [(*eng. headless installation*)](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi) s udaljenim pristupom protokolom SSH, potrebno je za početak montirati *root* i *firmware* particiju slike s SD kartice na računalo. Za početak, potrebno je stvoriti točku montiranja *rpi-root* u */mnt* direktoriju i montirati drugu pa prvu particiju na određena mjesta:
+Ako se želi Raspberry Pi OS konfigurirati bez monitora i tipkovnice spojenih na njega [(*eng. headless installation*)](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi) s udaljenim pristupom protokolom SSH, potrebno je za početak montirati *root* i *firmware* particiju slike s SD kartice na računalo. Onda je potrebno stvoriti točku montiranja *rpi-root* u */mnt* direktoriju i montirati drugu pa prvu particiju na */mnt/rpi-root* i */mnt/rpi-root/boot/firmware*:
 
 ```
 sudo mkdir /mnt/rpi-root
@@ -99,7 +99,7 @@ sudo mount [datoteka uređaja koja predstavlja SD karticu]2 /mnt/rpi-root
 sudo mount [datoteka uređaja koja predstavlja SD karticu]1 /mnt/rpi-root/boot/firmware
 ```
 
-Onda je potrebno dodati [korisničko ime i SHA-512 sažetu zaporku](https://www.raspberrypi.com/news/raspberry-pi-bullseye-update-april-2022/) u obliku [korisničko ime]:[SHA512 sažeta zaporka] u datoteku *userconf.txt* u korijenu *firmware* particije odnosno na lokaciji */mnt/rpi-root/boot/firmware*:
+Zatim je potrebno dodati [korisničko ime i SHA-512 sažetu zaporku](https://www.raspberrypi.com/news/raspberry-pi-bullseye-update-april-2022/) u obliku [korisničko ime]:[SHA512 sažeta zaporka] u datoteku *userconf.txt* u korijenu *firmware* particije odnosno na lokaciji */mnt/rpi-root/boot/firmware*:
 
 ```
 echo "[korisničko ime]:$(openssl passwd -6)" | sudo tee /mnt/rpi-root/boot/firmware/userconf.txt > /dev/null
@@ -156,8 +156,8 @@ sudo chmod 600 /mnt/rpi-root/etc/NetworkManager/system-connections/[ime profila 
 Konačno, odmontiranje *firmware* i *root* particije, brisanje *rpi-root* direktorija te izbacivanje USB SD čitača radi se naredbom:
 
 ```
-sudo umount /dev/sda1
-sudo umount /dev/sda2
+sudo umount /mnt/rpi-root/boot/firmware
+sudo umount /mnt/rpi-root
 sudo rmdir /mnt/rpi-root
 sudo eject [datoteka uređaja koja predstavlja SD karticu]
 ```
@@ -167,6 +167,42 @@ Za kraj, potrebno je SD karticu umetnuti u Raspberry Pi, po mogućnosti spojiti 
 Datoteke *userconf.txt* i *ssh* će se automatski izbrisati nakon uspješnog prvog pokretanja.
 
 U repozitoriju je dostupna skripta ```headless_config.sh``` koja izvršava sve naredbe navedene.
+
+#### Uređivanje slike prije pisanja na SD karticu
+
+Ako se želi urediti slika prije pisanja na SD karticu, to je moguće napraviti tako da se datoteka poveže s *loop* pseudouređajem. Dakle, potrebno je izvršiti naredbu:
+
+```
+sudo losetup -f --show -P 2024-10-22-raspios-bookworm-arm64-lite.img
+```
+
+Datoteci je sad moguće pristupiti kao blok uređaju. Ispis prethodne naredbe daje datoteku pseudouređaja koji predstavlja sliku kao blok uređaj. Ako je ispis bio primjerice */dev/loop0* onda su mu mu particije onda mu je *firmware* particija */dev/loop0p1*, a *root* particija */dev/loop0p2*. Kao i u primjeru s SD karticom, particije je potrebno montirati na */mnt/rpi-root* i */mnt/rpi-root/boot/firmware*:
+
+```
+sudo mkdir /mnt/rpi-root
+sudo mount /dev/loop0p2 /mnt/rpi-root
+sudo mount /dev/loop0p1 /mnt/rpi-root/boot/firmware
+```
+
+Nakon ovoga postupak za postavljanje korisničkog imena, SSH pristupa i pristupa mreži je isti kao i sa slučajem SD kartice. Nakon dovršenog postupka, particije se odmontiraju naredbama:
+
+```
+sudo umount /mnt/rpi-root/boot/firmware
+sudo umount /mnt/rpi-root
+sudo rmdir /mnt/rpi-root
+```
+
+Za kraj je potrebno odvojiti datoteku od pseudouređaja, u ovom slučaju za */dev/loop0* naredba je:
+
+```
+sudo losetup -d /dev/loop0
+```
+
+Slika se sad najnormalnije može pisati na SD karticu naredbom:
+
+```
+sudo dd if=2024-10-22-raspios-bookworm-arm64-lite.img of=[datoteka uređaja koja predstavlja SD karticu] bs=4M conv=fsync status=progress
+```
 
 ### Generiranje SSH ključeva za udaljeni pristup
 

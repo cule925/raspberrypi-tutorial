@@ -20,21 +20,21 @@ Zaustavljanje rada servisa se radi naredbom ```sudo systemctl start NetworkManag
 
 ## Konfiguracijske datoteke
 
-Iako *NetworkManager* servis ima zadanu konfiguracijsku datoteku */etc/NetworkManager/NetworkManager.conf*. Vlastite konfiguracije se mogu dodavati u direktoriju */etc/NetworkManager/conf.d*. Nadalje, neki paketi mogu dodavati svoje konfiguracije u direktoriju */usr/lib/NetworkManager/conf.d* ili */run/NetworkManager/conf.d*. Redoslijed parsiranja konfiguracijskih datoteka je sljedeći:
+Iako *NetworkManager* servis ima zadanu konfiguracijsku datoteku */etc/NetworkManager/NetworkManager.conf*, vlastite konfiguracije se mogu dodavati u direktoriju */etc/NetworkManager/conf.d*. Nadalje, neki paketi mogu dodavati svoje konfiguracije u direktoriju */usr/lib/NetworkManager/conf.d* ili */run/NetworkManager/conf.d*. Redoslijed parsiranja konfiguracijskih datoteka je sljedeći:
 
 - datoteke u */usr/lib/NetworkManager/conf.d*
 - datoteke u */run/NetworkManager/conf.d*
 - datoteka */etc/NetworkManager/NetworkManager.conf*
 - datoteke u */etc/NetworkManager/conf.d*
 
-Servis *NetworkManager* za svaki žičani Ethernet port namješta nekakve uobičajene postavke, primjerice DHCPv4 autokonfiguraciju ili IPv6 autokonfiguraciju što u poslužiteljskim okolinama možda i nije poželjno. Ove konekcije se mogu izlistati naredbom ```nmcli connection show``` te imaju naziv *Wired connection 1*, *Wired connection 2* i slično, ovisno koliko Ethernet sučelja postoji na računalu. Kako bi se to onemogućilo, u */etc/NetworkManager/NetworkManager.conf* datoteci je potrebno dodati:
+Servis *NetworkManager* za svaki žičani Ethernet port namješta zadane postavke, primjerice DHCPv4 autokonfiguraciju ili IPv6 autokonfiguraciju što u poslužiteljskim okolinama možda i nije poželjno. Ove konekcije se mogu izlistati naredbom ```nmcli connection show``` te imaju naziv *Wired connection 1*, *Wired connection 2* i slično, ovisno koliko Ethernet sučelja postoji na računalu. Kako bi se to onemogućilo, u */etc/NetworkManager/NetworkManager.conf* datoteci je potrebno dodati:
 
 ```
 [main]
 no-auto-default=*
 ```
 
-Ovo će onemogućiti stvaranje zadanih konfiguracija za sva Ethernet sučelja (oznaka *). Oznaka [sekcije](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/NetworkManager.conf.html) *main* označava da se sljedeće postavke odnose na općenite postavke.
+Ovo će onemogućiti stvaranje zadanih konfiguracija za sva Ethernet sučelja (oznaka *). Oznaka [sekcije](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/NetworkManager.conf.html) *main* označava da se sljedeće postavke odnose na općenite postavke *NetworkManagera*.
 
 Također, *NetworkManager* aktivira mrežno Ethernet mrežno sučelje samo ako postoji fizička konekcija kabelom na drugo Ethernet sučelje (odnosno *carrier*). Ovo možda nije pogodno za neke aplikacije koje zahtijevaju da sučelje bude odmah aktivno pri pokretanju računala. Dakle, ako se želi onemogućiti čekanje na fizičku konekciju i odmah omogućiti Ethernet sučelje, potrebno je u datoteku */etc/NetworkManager/NetworkManager.conf* dodati:
 
