@@ -330,5 +330,5 @@ sudo raspi-config nonint do_change_timezone Europe/Zagreb
 Preporučuje se slijediti sljedeće linkove:
 
 * informacije o *boot* procesu i jezgri: [ovdje](boot-process-and-kernel)
-* konfiguriranje mrežnih postavki: [ovdje](network)
+* konfiguriranje mrežnih postavki: [ovdje](networking)
 * upravljanje GPIO pinovima: [ovdje](gpio)
