@@ -1,132 +1,169 @@
-# RASPBERRY PI
+# RASPBERRY PI 4B
 
-[Raspberry Pi](https://www.raspberrypi.com/) je serija mikroračunala koju je razvila zaklada Raspberry Pi Foundation. Neki od poznatijih modela su: Raspberry Pi 5, Raspberry Pi 4 Model B, Raspberry Pi 3 Model B, Raspberry Pi Zero i Raspberry Pi Pico. Međusobno se razlikuju po sustavu na čipu kojeg koriste (*eng. System on Chip*), veličini pločice, sučeljima za komunikaciju, potrošnji energije, količini GPIO (*eng. General Purpose Input Output*) pinova, cijeni i slično.
+[Raspberry Pi](https://www.raspberrypi.com/) je serija mikroračunala koju je razvila zaklada Raspberry Pi Foundation u kolaboraciji s Broadcom korporacijom. Radi svoje fleksibilnosti, male potrošnje i male potrošnje ima široku upotrebu u edukaciji, istraživanju i u industriji.
 
-## Raspberry Pi 4B
+[Raspberry Pi 4B](https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-product-brief.pdf) je četvrta generacija Raspberry Pi modela. Slične potrošnje kao i njegov prethodnik, Raspberry Pi 3+, ali veće procesorske snage, učinio ga je i povoljnim za korištenje kao desktop računalo.
 
-[Raspberry Pi 4B](https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-product-brief.pdf) je četvrta generacija Raspberry Pi modela. Značajno je poboljšana naspram svojih prethodnika. Veća procesorska snaga uz sličnu potrošnju kao i prethodnik Raspberry Pi 3+, učinio ga je i povoljnim za korištenje kao desktop računalo. [Specifikacije](https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-datasheet.pdf) su mu sljedeće:
+[Specifikacije](https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-datasheet.pdf) su mu sljedeće:
 
-- sustav na čipu [Broadcom BCM2711](https://www.raspberrypi.com/documentation/computers/processors.html#bcm2711):
-	- četverojezgreni ARM Cortex-A72 procesor:
-		- 64 bitna ARM v8 arhitektura
-		- takt 1.5 GHz
+- sustav na čipu (SoC): [Broadcom BCM2711](https://www.raspberrypi.com/documentation/computers/processors.html#bcm2711):
+	- procesor (CPU): četverojezgreni ARM Cortex-A72 procesor (ARMv8, 64 bitni, 1.8 GHz)
 	- priručna memorija:
-		- L1: 32 KiB podatkovna L1 i 48 KiB instrukcijska po jezgri
-		- L2: zajednička 1 MiB
-	- grafički procesor VideoCore 6 3D Graphics:
-		- 32 bitan
-		- takt 500 MHz
-		- hardverska podrška:
-			- H.265 kodek za dekompresiju 4K60 video sadržaja
+		- L1: 32 KiB podatkovna + 48 KiB instrukcijska po jezgri
+		- L2: 1 MiB
+	- grafički procesor: VideoCore VI (32 bitni, 500 MHz)
+		- hardverska podrška za:
+			- H.265 kodek za dekompresiju 4Kp60 video sadržaja
 			- H.264 kodek za kompresiju 1080p30 i dekompresiju 1080p60 video sadržaja
-			- OpenGL ES 3.0 API
+			- OpenGL ES 3.0 podrška
 	- ulazno-izlazna sučelja:
-		- Ethernet
-		- 2 DSI (1 dostupan na pločici)
-		- 2 CSI (1 dostupan na pločici)
-		- 6 I2C (multipleksiran s UART-om)
-		- 6 UART (multipleksiran s I2C-om)
-		- 6 SPI (5 dostupni na pločici)
-		- 2 HDMI
-		- Composite video
-		- USB
-	- podržava maksimalnu vanjsku radnu memoriju veličine 8 GiB
-- radna memorija 8 GiB, 4 GiB, 2 GiB ili 1 GiB ovisno o modelu
-	- LPDDR4 RAM 
-	- on-die ECC
-- bežična komunikacija:
-	- Wi-Fi 2.4 GHz i 5 GHz, IEEE 802.11 b/g/n/ac
+		- 6 UART portova
+		- 6 I2C portova
+		- 6 SPI portova
+		- PCIe 2.0 x1 sabirnica na kojoj je spojen PCIe most
+		- 58 GPIO portova
+		- Gigabit Ethernet kontroler port (MAC sloj)
+		- 2 DSI portova
+		- 2 CSI portova
+		- 2 HDMI 2.0 portova
+		- USB 2.0 OTG kontroler port
+		- SD/eMMC port
+- radna memorija (RAM): Micron LPDDR4-2400 SDRAM
+	- 1 GiB, 2 GiB, 4 GiB ili 8 GiB, ovisno o varijanti pločice
+- bežična komunikacija: Broadcom BCM43455
+	- Wi-Fi radio (802.11b/g/n/ac) 2.4 GHz i 5 GHz
 	- Bluetooth 5.0, BLE
-- žičana komunikacija i priključci:
-	- Ethernet 1 GiB
-	- DSI
-	- CSI
-	- 2 micro HDMI
-	- A/V (Audio Video)
-	- 2 USB A 3.0
-	- 2 USB A 2.0
-	- 40 pinski GPIO
-	- micro SD
-- napajanje minimalno 5 V i 3 A
-	- USB C priključak
-	- preko GPIO pinova
-	- preko Etherneta (*eng Power over Ethernet*), potreban dodatan hardverski modul
+- portovi dostupni na PCB pločici:
+	- 40 pinski priključak od kojih su 28 GPIO priključci koji mogu imati sljedeće funkcije:
+		- UART (2 porta)
+		- I2C (2 porta)
+		- SPI (2 porta)
+		- PWM (4 kanala, 2 po kontroleru)
+		- Display Parallel Interface (DPI)
+		- JTAG
+		- GPCLK
+	- USB 3.0 portovi (2 USB A porta)
+		- spojeni na VL805 USB 3.0 kontroler koji je spojen na PCIe most u BCM2711-u
+	- USB 2.0 portovi (2 USB A porta)
+		- spojeni na USB hub koji je spojen na USB 2.0 OTG kontroler u BCM2711-u
+		- USB 2.0 OTG je zadano u host načinu rada, moguće ga je postaviti u načinu rada periferije (u tom slučaju se koristi USB C port koji je inače za napajanje)
+	- Ethernet port
+		- spojen na Ethernet kontroler (PHY sloj) koji je spojen na Ethernet kontroler (MAC sloj) u BCM2711-u
+	- 1 DSI port
+	- 1 CSI port
+	- 2 HDMI porta (mikro HDMI priključci)
+	- 1 SDIO port (utor za micro SD karticu)
+- napajanje:
+	- USB C utor za napajanje
+		- 5 V, 3 A
+	- Power over Ethernet (PoE)
+- dodatne informacije:
+	- inicijalni bootloader se nalazi u ROM-u
+	- postavke za bootloader i neke periferije se nalaze u EEPROM-u
 
-### Raspberry Pi OS
+## Raspberry Pi OS
 
-[Raspberry Pi OS](https://www.raspberrypi.com/documentation/computers/os.html) je operacijski sustav koji se temelji na Debian Linux distribuciji te je optimiziran za Raspberry Pi mikroračunala. Ovo znači da Raspberry Pi OS prati cikluse ažuriranja kao i Debian odnosno nova inačica Raspberry Pi OS-a izlazi otprilike svake dvije godine uz malo kašnjenje jer se mora testirati kompatibilnost paketa s ARM procesorima. Postoje 64 bitne i 32 bitne inačica Raspberry Pi OS-a te mogu doći s grafičkim sučeljem ili bez (inačica *Lite*).
+[Raspberry Pi OS](https://www.raspberrypi.com/documentation/computers/os.html) je Debian Linux distribucija koja je optimizirana za Raspberry Pi mikroračunala. Prati cikluse ažuriranja kao i Debian što znači da nova inačica Raspberry Pi OS-a izlazi otprilike svake dvije godine uz malo kašnjenje jer se mora testirati kompatibilnost paketa s ARM procesorima. Postoje 64 bitne i 32 bitne inačice koje mogu doći s grafičkim sučeljem ili bez (inačica *Lite*).
 
-### Raspberry Pi OS Lite distribucija
+### Preuzimanje slike Lite inačice
 
-Raspberry Pi OS Lite je manje zahtjevna inačica Raspberry Pi OS-a koja ne dolazi s grafičkim sučeljem i dodatnim paketima. Postoji 64 bitna i 32 bitna inačica ovog operacijskog sustava. Za Raspberry Pi 4B preporučuje se preuzeti 64 bitnu sliku. Kao primjer, uzet će se slika **raspios_lite_arm64-2024-10-28**. Ako se žele odabrati neke druge *Lite* inačice, to se može napraviti [ovdje](https://downloads.raspberrypi.com/raspios_lite_arm64/images/). Preporučuje se napraviti direktorij *rpi-images* u korisničkom *home* direktoriju, premjestiti se u njega i pokrenuti preuzimanje sljedećim naredbama u terminalu:
+Za instalaciju preporučeno je koristiti SD karticu od barem 16 GiB.
+
+Raspberry Pi OS Lite 64 bitna inačica se može preuzeti [ovdje](https://downloads.raspberrypi.com/raspios_lite_arm64/images/). Slika, odnosno ```.img``` datoteka sadrži cijelu sliku diska (shemu particioniranja - Master Boot Record (MBR), particije, datotečne sustave, ...) i nju je potrebno klonirati na SD karticu. Nakon što se slika klonira na SD karticu i kartica se umetne te se pokrene Raspberry Pi, prva inicijalizacija distribucije će povećati particije na stvarnu veličinu SD kartice.
+
+Kao primjer, naredba za preuzimanje slike ```2024-10-22-raspios-bookworm-arm64-lite.img.xz``` u direktorij ```rpi-images``` u korisnikovom *home* direktoriju je:
 
 ```
 mkdir ~/rpi-images && cd ~/rpi-images && \
 curl https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2024-10-28/2024-10-22-raspios-bookworm-arm64-lite.img.xz -o 2024-10-22-raspios-bookworm-arm64-lite.img.xz
 ```
 
-Slika je trenutačno u XZ kompresiranom formatu. Potrebno ju je dekompresirati naredbom:
+Preuzeta slika bit će kompresirana pa ju je prije kloniranja na SD karticu potrebno dekompresirati:
 
 ```
 xz -d 2024-10-22-raspios-bookworm-arm64-lite.img.xz
 ```
 
-Zatim je potrebno priključiti USB SD čitač kartice s micro SD utorom u računalo i prepisati ju s prethodnom otpakiranom slikom. Ali za početak je potrebno saznati datoteku uređaja koja predstavlja priključenu micro SD karticu:
+### Uređivanje preuzete slike mapiranjem na pseudouređaj
+
+Ako se želi urediti slika prije pisanja na SD karticu, primjerice, želi joj se postaviti inicijalnog korisnika unaprijed, to se može napraviti tako što se slika mapira na *loop* pseudouređaj. U tom slučaju se datoteci ```.img``` više neće pristupati kao običnoj datoteci već kao disku odnosno blok uređaju. Povezivanje datoteke s *loop* pseudouređajem može se napraviti naredbom:
 
 ```
-lsblk
+sudo losetup -f --show -P 2024-10-22-raspios-bookworm-arm64-lite.img
 ```
 
-Najčešće oblika */dev/sda*, */dev/sdb*, */dev/sdc* i slično. Kao pomoć pogledati veličinu koju ima predstavljena datoteka uređaja. Također, prije pisanja je potrebno demontirati particije SD kartice ako su montirane naredbom:
+Opcija ```-f``` će pronaći prvi slobodni pseudouređaj za mapiranje datoteke, opcija ```--show``` će prikazati koji pseudouređaj je pronađen, a opcija ```-P``` će pretražiti postoje li particije na toj mapiranoj datoteci. Ako se izvrši ```lsblk``` uočit će se novi blok uređaj i particije na tom uređaju. Ako je primjerice, dodijeljeni uređaj bio ```/dev/loop0```, particije će mu biti vjerojatno biti ```/dev/loop0p1``` i ```/dev/loop0p2``` za mapiranu Raspberry Pi OS Lite sliku.
 
-```
-sudo umount [datoteka uređaja koja predstavlja SD karticu]*
-```
+### Montiranje datotečnih sustava
 
-Konačno, sada je moguće pisati sliku na SD karticu naredbom:
-
-```
-sudo dd if=2024-10-22-raspios-bookworm-arm64-lite.img of=[datoteka uređaja koja predstavlja SD karticu] bs=4M conv=fsync status=progress
-```
-
-### Konfiguracija bez monitora i tipkovnice
-
-Ako se želi Raspberry Pi OS konfigurirati bez monitora i tipkovnice spojenih na njega [(*eng. headless installation*)](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi) s udaljenim pristupom protokolom SSH, potrebno je za početak montirati *root* i *firmware* particiju slike s SD kartice na računalo. Onda je potrebno stvoriti točku montiranja *rpi-root* u */mnt* direktoriju i montirati drugu pa prvu particiju na */mnt/rpi-root* i */mnt/rpi-root/boot/firmware*:
+Datotečni sustavi particija ```/dev/loop0p1``` i ```/dev/loop0p2``` (u slučaju da je dodijeljeni pseudouređaj bio ```/dev/loop0```) mogu se montirati naredbama:
 
 ```
 sudo mkdir /mnt/rpi-root
-sudo mount [datoteka uređaja koja predstavlja SD karticu]2 /mnt/rpi-root
-sudo mount [datoteka uređaja koja predstavlja SD karticu]1 /mnt/rpi-root/boot/firmware
+sudo mount /dev/loop0p2 /mnt/rpi-root
+sudo mount /dev/loop0p1 /mnt/rpi-root/boot/firmware
 ```
 
-Zatim je potrebno dodati [korisničko ime i SHA-512 sažetu zaporku](https://www.raspberrypi.com/news/raspberry-pi-bullseye-update-april-2022/) u obliku [korisničko ime]:[SHA512 sažeta zaporka] u datoteku *userconf.txt* u korijenu *firmware* particije odnosno na lokaciji */mnt/rpi-root/boot/firmware*:
+Prva particija ```/dev/loop0p1``` je **boot** particija i ona sadrži *bootloader*, Linux jezgru, parametre za Linux jezgru, *initramfs*, datoteke stabla uređaja i slično. Druga particija ```/dev/loop0p2``` je **root** particija i ona sadrži sve ostale datoteke sustava, aplikacije i korisničke podatke.
+
+### Inicijalizacija bez monitora i tipkovnice
+
+Prilikom inicijalizacije, Raspberry Pi OS će uz povećanje particija, zahtijevati od korisnika da upiše inicijalno korisničko ime i zaporku. Ovo može predstavljati problem ako monitor ili tipkovnica nisu dostupni. Međutim i za to postoji rješenje.
+
+#### Postavljanje inicijalnog korisničkog imena i zaporke
+
+Kako bi se unaprijed postavilo korisničko ime i zaporku, potrebno je u datoteku ```userconf.txt``` na **boot** particiji dodati korisničko ime i SHA-512 sažetu zaporku. To se može napravit naredbom:
 
 ```
-echo "[korisničko ime]:$(openssl passwd -6)" | sudo tee /mnt/rpi-root/boot/firmware/userconf.txt > /dev/null
+HASHED_PASSWORD=$(openssl passwd -6)
+echo "<korisničko ime>:$HASHED_PASSWORD" | sudo tee /mnt/rpi-root/boot/firmware/userconf.txt > /dev/null
+unset HASHED_PASSWORD
 ```
 
-Ova datoteka definira novog običnog korisnika koji će se stvoriti i njegovu zaporku, korisnik ima pravo izvršavati privilegirane naredbe s prefiksom *sudo*. Korisnik *root* nema definiranu zaporku. To se može napraviti iako nije u ovom slučaju potrebno.
+#### Postavljanje imena mikroračunala
 
-Nakon postavljanja korisnika potrebno je stvoriti datoteku *ssh* u korijenu *firmware* particije odnosno na lokaciji */mnt/rpi-root/boot/firmware* koja će omogućiti pokretanje SSH servisa *ssh*.
+Inicijalno ime mikroračunala (*eng. hostname*) može se postaviti naredbom:
+
+```
+echo "<ime mikroračunala>" | tee /mnt/rpi-root/etc/hostname
+```
+
+#### Omogućivanje SSH servisa
+
+Ako se želi inicijalno omogućiti SSH servis to se može napraviti stvaranjem prazne datoteke *ssh* na **boot** particiji naredbom:
 
 ```
 sudo touch /mnt/rpi-root/boot/firmware/ssh
 ```
 
-Za upravljanje mrežnim postavkama, Raspberry Pi OS koristi paket alata [*NetworkManager*](https://networkmanager.dev/). Alati upravljaju Ethernet sučeljima, Wi-Fi sučeljima i sučeljima mobilne veze. Kako bi alati funkcionirali kako treba u pozadini servis *NetworkManager* mora biti pokrenut.
+#### Povezivanje na Wi-Fi mrežu
 
-U slučaju želje automatskog spajanja Raspberry Pi mikroračunala na mrežu, potrebno je definirati [profil konekcije](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_networking/assembly_networkmanager-connection-profiles-in-keyfile-format_configuring-and-managing-networking#assembly_networkmanager-connection-profiles-in-keyfile-format_configuring-and-managing-networking) u direktoriju ```/etc/NetworkManager/system-connections/```. Najlakše je koristiti već gotovu datoteku profila konekcije koja se koristi na računalu, uz male preinake. Naredbom ```nmcli connection show``` mogu se izlistati svi profili. Ime profila koji se koristi za spajanje na mrežu ima svoju datoteku koja definira postavke mreže na koju se spaja. Ta se datoteka profila nalazi u */etc/NetworkManager/system-connections/* oblika ```[ime profila konekcije].nmconnection```. Moguće je izvesti kopiranje datoteke */etc/NetworkManager/system-connections/[ime profila konekcije].nmconnection* s računala na */mnt/rpi-root/etc/NetworkManager/system-connections/[ime profila konekcije].nmconnection* na Raspberry Pi mikroračunalo pa ju onda izmijeniti uređivačem teksta, primjerice *nano* uređivačem teksta. Također, u novoj datoteci se predlaže postavljanje novog UUID-a uz naredbu ```uuidgen```. Primjerice, datoteka */mnt/rpi-root/etc/NetworkManager/system-connections/[ime profila konekcije].nmconnection* može izgledati ovako:
+U slučaju da ne postoji mogućnost povezivanja na mrežu preko Ethernet sučelja kako bi se primjerice pristupilo mikroračunalu preko SSH servisa, moguće je stvoriti inicijalni profil Wi-Fi konekcije. Raspberry Pi OS koristi servis [*NetworkManager*](https://networkmanager.dev/). Servis upravlja Ethernet sučeljima, Wi-Fi sučeljima i sučeljima mobilne veze. Kod Raspberry Pi OS-a, ovaj servis bi trebao biti zadano omogućen što se može provjeriti naredbom:
+
+```
+sudo ls -la /mnt/rpi-root/etc/systemd/system/multi-user.target.wants/NetworkManager.service
+```
+
+**Ako simbolička poveznica ne postoji**, potrebno je izvršiti naredbu ```sudo ln -s /mnt/rpi-root/usr/lib/systemd/system/NetworkManager.service /mnt/rpi-root/etc/systemd/system/multi-user.target.wants/NetworkManager.service``` što je jednako izvršenju naredbe ```systemctl enable NetworkManager.service```.
+
+Profil konekcije može se dodati stvarajući datoteku ```preconfigured.nmconnection``` na **root** particiji u direktoriju ```/etc/NetworkManager/system-connections/```. Stvaranje datoteke može se napraviti naredbom:
+
+```
+sudo nano /mnt/rpi-root/etc/NetworkManager/system-connections/preconfigured.nmconnection
+```
+
+Sadržaj datoteke mora izgledati ovako:
 
 ```
 [connection]
-id=<SSID mreže>
-uuid=<novi UUID>
+id=<SSID>
+uuid=<UUID>
 type=wifi
 interface-name=wlan0
 
 [wifi]
 mode=infrastructure
-ssid=<SSID mreže>
+ssid=<SSID>
 
 [wifi-security]
 auth-alg=open
@@ -143,48 +180,21 @@ method=auto
 [proxy]
 ```
 
-Stavke ```auth-alg=open``` i ```key-mgmt=wpa-psk``` se koriste za većinu kućnih mreža. Prva stavka označava da mreža ne koristi nikakvu autentifikaciju tijekom prve prijave dok druga stavka govori da se koristi javni ključ (PSK) odnosno zaporka za provjeravanje autentičnosti se iz njega stvaraju kriptografski ključevi kojima se kriptiraju podatci tijekom prijenosa. Više informacija o drugim opcijama se može naći [ovdje](https://networkmanager.dev/docs/api/latest/settings-802-11-wireless-security.html).
-
-**Obično se datoteke u /etc/NetworkManager/system-connections ne stvaraju ručno već uz alat nmcli jer svaka mala greška može imati nepredvidivo ponašanje.**
-
-Nakon kopiranja ili stvaranja datoteke na Raspberry Pi mikroračunalu, potrebno joj je promijeniti ovlasti:
+UUID se može stvoriti naredbom:
 
 ```
-sudo chmod 600 /mnt/rpi-root/etc/NetworkManager/system-connections/[ime profila konekcije].nmconnection
+uuidgen
 ```
 
-Konačno, odmontiranje *firmware* i *root* particije, brisanje *rpi-root* direktorija te izbacivanje USB SD čitača radi se naredbom:
+Informacije o opcijama se mogu naći [ovdje](https://networkmanager.dev/docs/api/latest/settings-802-11-wireless-security.html). Za kraj, potrebno je promijeniti dozvole same datoteke naredbom:
 
 ```
-sudo umount /mnt/rpi-root/boot/firmware
-sudo umount /mnt/rpi-root
-sudo rmdir /mnt/rpi-root
-sudo eject [datoteka uređaja koja predstavlja SD karticu]
+sudo chmod 600 /mnt/rpi-root/etc/NetworkManager/system-connections/preconfigured.nmconnection
 ```
 
-Za kraj, potrebno je SD karticu umetnuti u Raspberry Pi, po mogućnosti spojiti ga na mrežu Ethernetom iako mu je već zadan SSID i zaporka mreže te priključiti mu napajanje. Raspberry Pi OS će sam proširiti drugu particiju, particiju *root*, sve do kraja slobodnog prostora SD kartice.
+### Demontiranje datotečnih sustava
 
-Datoteke *userconf.txt* i *ssh* će se automatski izbrisati nakon uspješnog prvog pokretanja.
-
-U repozitoriju je dostupna skripta ```headless_config.sh``` koja izvršava sve naredbe navedene.
-
-#### Uređivanje slike prije pisanja na SD karticu
-
-Ako se želi urediti slika prije pisanja na SD karticu, to je moguće napraviti tako da se datoteka poveže s *loop* pseudouređajem. Dakle, potrebno je izvršiti naredbu:
-
-```
-sudo losetup -f --show -P 2024-10-22-raspios-bookworm-arm64-lite.img
-```
-
-Datoteci je sad moguće pristupiti kao blok uređaju. Ispis prethodne naredbe daje datoteku pseudouređaja koji predstavlja sliku kao blok uređaj. Ako je ispis bio primjerice */dev/loop0* onda su mu mu particije onda mu je *firmware* particija */dev/loop0p1*, a *root* particija */dev/loop0p2*. Kao i u primjeru s SD karticom, particije je potrebno montirati na */mnt/rpi-root* i */mnt/rpi-root/boot/firmware*:
-
-```
-sudo mkdir /mnt/rpi-root
-sudo mount /dev/loop0p2 /mnt/rpi-root
-sudo mount /dev/loop0p1 /mnt/rpi-root/boot/firmware
-```
-
-Nakon ovoga postupak za postavljanje korisničkog imena, SSH pristupa i pristupa mreži je isti kao i sa slučajem SD kartice. Nakon dovršenog postupka, particije se odmontiraju naredbama:
+Demontiranje montiranih datotečnih sustava može se napraviti naredbama:
 
 ```
 sudo umount /mnt/rpi-root/boot/firmware
@@ -192,142 +202,207 @@ sudo umount /mnt/rpi-root
 sudo rmdir /mnt/rpi-root
 ```
 
-Za kraj je potrebno odvojiti datoteku od pseudouređaja, u ovom slučaju za */dev/loop0* naredba je:
+### Demapiranje slike sa pseuduređaja
+
+Odmapiranje slike sa pseudouređaja (ako je dodijeljeni pseuduređaj bio ```/dev/loop0```) može se napraviti naredbom:
 
 ```
 sudo losetup -d /dev/loop0
 ```
 
-Slika se sad najnormalnije može pisati na SD karticu naredbom:
+### Kloniranje slike na SD karticu
+
+Potrebno je umetnuti SD karticu u čitač SD kartice te taj čitač spojiti na računalo. Nakon toga, SD kartici će se dodijeliti datoteka uređaja (vidljivo ```lsblk``` naredbom), primjerice ```/dev/sda``` ili ```/dev/sdb```. **Bitno je identificirati koja datoteka uređaja pripada SD kartici.** Ovo se može napraviti naredbom ```sudo dmesg```. Prije pisanja na SD karticu, potrebno je demontirati sve postojeće particije SD kartice koje su se automatski montirale naredbom:
 
 ```
-sudo dd if=2024-10-22-raspios-bookworm-arm64-lite.img of=[datoteka uređaja koja predstavlja SD karticu] bs=4M conv=fsync status=progress
+sudo umount <datoteka uređaja koja predstavlja SD karticu>*
 ```
 
-### Generiranje SSH ključeva za udaljeni pristup
+Kloniranje slike se može napraviti sljedećom naredbom:
 
-Kako bi mogli udaljeno pristupiti Raspberry Pi mikroračunalu koje pokreće SSH servis, potrebno je ako već nije generirati jedan par SSH ključeva. Generiranje jednog para asimetričnih ključeva po krivulji ED25519 može se napraviti naredbom:
+```
+sudo dd if=2024-10-22-raspios-bookworm-arm64-lite.img of=<datoteka uređaja koja predstavlja SD karticu> bs=4M conv=fsync status=progress
+```
+
+Sigurno izbacivanje SD kartice može se napraviti sljedećom naredbom:
+
+```
+sudo eject <datoteka uređaja koja predstavlja SD karticu>
+```
+
+### Inicijalizacija i udaljeni pristup
+
+**Nakon prvog pokretanja root particija će se proširiti do kraja veličine SD kartice.** Nakon toga će se pojaviti upit za postavljanje inicijalnog korisnika i njegove zaporke **samo ako slika nije uređena postavljanjem inicijalnog korisnika u userconf.txt datoteci prije kloniranja**.
+
+Ako se želi mikroračunalu udaljeno pristupati preko SSH protokola, potrebno ga je povezati na lokalnu mrežu bilo preko Ethernet ili Wi-Fi sučelja. SSH servis mora biti unaprijed omogućen uređivanjem slike prije kloniranja. Udaljeni pristup preko SSH protokola je koristan ako pri ruci nije dostupan monitor ili tipkovnica.
+
+U ovom slučaju, uloge su sljedeće:
+
+- **lokalno računalo je SSH klijent**
+- **udaljeno računalo odnosno mikroračunalo je SSH poslužitelj**
+
+Kako bi pristupili mikroračunalu potrebno je prvo na računalu stvoriti jedan par SSH ključeva. Stvaranje jednog para asimetričnih ključeva po krivulji ED25519 može se napraviti naredbom:
 
 ```
 ssh-keygen -t ed25519
 ```
 
-Kopiranje javnog ključa na Raspberry Pi radi se naredbom:
+Ključevi će se nalaziti u direktoriju ```.ssh``` u korisnikovom *home* direktoriju. Obično datoteka javnog ključa ima nastavak ```.pub``` dok datoteka privatnog ključa nema nastavak. Kako bi se javni ključ kopirao s računala na mikroračunalo, potrebno je izvršiti sljedeću naredbu:
 
 ```
-ssh-copy-id [korisničko ime na Raspberry Pi mikroračunalu]@[IP adresa Raspberry Pi mikroračunala]
+ssh-copy-id <korisničko ime na Raspberry Pi mikroračunalu>@<IP adresa Raspberry Pi mikroračunala>
 ```
 
-Autorizacija i otvaranje sesije SSH klijenta (računalo) na SSH poslužitelj (Raspberry Pi mikroračunalo) radi se naredbom:
+Tražit će se zaporka korisnika na mikroračunalu.
+
+Nakon izvršenja ove naredbe dogodit će se razmjena javnih ključeva. Javni ključ računala nadodat će se u datoteci ```authorized_keys``` u direktoriju ```.ssh``` u *home* direktoriju udaljenog korisnika na mikroračunalu. Javni ključ mikroračunala nadodat će se u datoteci ```known_hosts``` u direktoriju ```.ssh``` u *home* direktoriju korisnika na računalu.
+
+Ali odakle mikroračunalu par asimetričnih ključeva? Par ključeva se generirao za vrijeme prvog pokretanja Raspberry Pi OS-a. Oni se nalaze u direktoriju ```/etc/ssh```.
+
+Dakle, direktorij ```.ssh``` na lokalnom računalu u korisnikovom *home* direktoriju sadrži:
+
+- datoteku javnog ključa, ako ime nije dano pri stvaranju onda je ```id_ed25519.pub```
+- datoteku privatnog ključa, ako ime nije dano pri stvaranju onda je ```id_ed25519```
+- datoteku liste javnih ključeva udaljenih računala odnosno mikroračunala ```known_hosts```, tu se nalazi javni ključ mikroračunala (SSH poslužitelj)
+
+Dok direktorij ```.ssh``` na udaljenom mikroračunalu u korisnikovom *home* direktoriju sadrži:
+
+- datoteku liste javnih ključeva računala kojima je dozvoljeno spajanje bez lozinke ```authorized_keys```, tu se nalazi javni ključ lokalnog računala (SSH klijent)
+
+Konačno, pristup s lokalnog računala na udaljeno mikroračunalo moguće je naredbom:
 
 ```
-ssh [korisničko ime na Raspberry Pi mikroračunalu]@[IP adresa Raspberry Pi mikroračunala]
+ssh <korisničko ime na Raspberry Pi mikroračunalu>@<IP adresa Raspberry Pi mikroračunala>
 ```
 
-Izlaz is sesije moguće je naredbama ```exit``` ili ```logout```.
+Ako se na lokalnom računalu želi uklonit zapis u ```known_hosts``` datoteci, to se može napraviti naredbom:
 
-### Instalacija, deinstalacija i ažuriranje softvera
+```
+ssh-keygen -R <ime udaljenog računala|IP adresa udaljenog računala>
+```
 
-Raspberry Pi OS koristi [APT](https://en.wikipedia.org/wiki/APT_(software)) upravitelj softverskih paketa. Datoteka ```/etc/apt/sources.list``` sadrži popis repozitorija koji APT pregledava u slučaju željom za instalacijom ili ažuriranjem softvera. Kako bi se se ažurirao lokalni popis paketa uz oznaka njihovih verzija potrebno je izvršiti naredbu:
+Prethodni sadržaj ```known_hosts``` datoteke spremit će se u ```known_hosts.old``` u ```.ssh``` direktoriju u *home* direktoriju korisnika.
+
+Također, ako se na udaljenom mikroračunalu želi ukloniti javni ključ lokalnog računala što će onemogućiti pristup s ```ssh``` naredbom, to je uklanjanjem odgovarajuće linije u ```authorized_keys``` datoteci:
+
+```
+nano ~/.ssh/authorized_keys
+```
+
+S lokalnog računala se više neće moći pristupati udaljenom mikroračunalu ```ssh``` naredbom bez upisivanja zaporke. U tom slučaju potrebno je ponovno kopirati javni ključ lokalnog računala naredbom ```ssh-copy-id```.
+
+Izlaz iz SSH sesije s klijentske strane se može napraviti naredbom ```exit``` ili ```logout```.
+
+## Upravljanje softverom
+
+[APT](https://en.wikipedia.org/wiki/APT_(software)) je alat za upravljanje softverskih alata kojeg, kao i Debian, koristi i Raspberry Pi OS.
+
+Datoteka ```/etc/apt/sources.list``` sadrži popis repozitorija koji APT pregledava kada ažurira popis dostupnih paketa za instalaciju. Dodatne datoteke s URL-ovima repozitorija mogu se dodati u direktoriju ```/etc/apt/sources.list.d/```.
+
+Datoteke s listama paketa i njihovih verzija povučenih iz navedenih repozitorija nalaze se u direktoriju ```/var/lib/apt/lists/```.
+
+U slučaju da se želi ažurirati popis paketa, primjerice ako su na repozitorijima dodani novi softverski paketi ili ažurirani stari, to se može napraviti naredbom:
 
 ```
 sudo apt update
 ```
 
-Ako se već instalirani paketi žele ažurirati na najnoviju verziju, potrebno je izvršiti naredbu:
+Ako se žele saznati informacije o paketu s lokalnog popisa, potrebno je izvršiti naredbu:
+
+```
+sudo apt-cache show <ime paketa>
+```
+
+Ako se žele nadograditi trenutačni paketi na najnoviju verzije zapisane u lokalnom popisu, to se može napraviti izvršavajući:
+
+```
+sudo apt upgrade
+```
+
+Prethodna naredba će nadograditi postojeće pakete, ali ih neće brisati. U slučaju da je potrebno nadograditi cijeli sustav (cijelu distribuciju) gdje je potrebno i ukloniti neke pakete, može se izvršiti naredba:
 
 ```
 sudo apt full-upgrade
 ```
 
-Prije izvršenja ove naredbe, dobro je pogledati količinu slobodnog prostora koji postoji na spremnicima naredbom ```df -h```.
-
-Pretraga lokalnog popisa paketa radi se naredbom:
+Instalaciju paketa s lokalnog popisa moguće je izvršiti naredbom:
 
 ```
-sudo apt-cache [ključna riječ]
+sudo apt install <ime paketa>
 ```
 
-Detaljnije informacije o paketu se mogu dobiti naredbom:
+Uklanjanje instaliranog paketa moguće je izvršiti naredbom:
 
 ```
-sudo apt show [ime paketa]
+sudo apt remove <ime paketa>
 ```
 
-Instalacija paketa se može napraviti naredbom:
+Ako se uz paket želi ukloniti i njegove konfiguracijske datoteke, to se može napraviti naredbom:
 
 ```
-sudo apt install [ime paketa]
+sudo apt purge <ime paketa>
 ```
 
-Uklanjanje paketa se može napraviti naredbom:
+Uklanjanje nekorištenih zavisnosti (primjerice, u slučaju brisanja paketa) može se napraviti naredbom:
 
 ```
-sudo apt remove [ime paketa]
+sudo apt autoremove
 ```
 
-Uklanjanje paketa uključujući i njegove konfiguracijske datoteke se može napraviti naredbom:
+## Opća konfiguracija sustava
 
-```
-sudo apt purge [ime paketa]
-```
-
-Uklanjanje nekorištenih zavisnosti radi se naredbom:
-
-```
-sudo apt clean
-```
-
-### Nadogradnja firmwarea
-
-Nadogradnja firmwarea se radi samo za **eksperimentalne svrhe** jer se povlači najnovija inačica firmwarea koja ima moguće nestabilnosti. Preuzimaju se prototipne inačice Linux jezgre, stabla uređaja, modula i VideoCore firmwarea. **Dakle, ovaj proces se ne koristi za normalni proces ažuriranja sustava.** Naredba za izvršenje nadogradnje firmwarea radi se naredbom:
-
-```
-sudo rpi-update
-```
-
-U ovom slučaju potrebno je ponovno pokrenuti Raspberry Pi naredbom: ```sudo reboot```.
-
-### Korisni alati
-
-Neki korisni alati za nadzor sustava bi bili:
-
-- *kmsprint* -
-	- detalji o spojenim monitorima na Raspberry Pi
-- *vclog* -
-	- dohvat zapisa VideoCore grafičkog procesora
-- *vcgencmd*
-	- informacije o VideoCore grafičkom procesoru
-	- za sve opcije potrebno upisati ```vcgencmd commands```
-		- primjerice, opcija ```measure_temp``` vraća temperaturu sustava na čipu
-			- primjer naredbe: ```vcgencmd measure_temp```
-		- opcija ```measure_clock``` vraća takt pojedine komponente u sustavu na čipu, neke od njih mogu biti:
-			- ```arm``` - ARM jezgra
-			- ```core``` - VideoCore jezgra
-			- ```h264``` - H.264 akcelerator
-			- ```uart``` - UART
-			- ...
-			- primjer naredbe: ```vcgencmd measure_clock arm```
-
-### Opća konfiguracija sustava
-
-Za opću konfiguraciju Raspberry Pi OS-a, potrebno je izvršiti naredbu:
+Opća konfiguracija Raspberry Pi OS-a može se napraviti naredbom:
 
 ```
 sudo raspi-config
 ```
 
-Moguće je pokretati neinteraktivni način rada ove naredbe: ```raspi-config nonint [naredba] [argumenti]```. Opća konfiguracija nudi mnogo opcija koje se mogu naći [ovdje](https://www.raspberrypi.com/documentation/computers/configuration.html#raspi-config). Primjerice, u neinteraktivnom načinu, postavljanje imena Raspberry Pi mikroračunala po želji i vremensku zonu na "Europe/Zagreb":
+Naredba će pokrenuti jednostavno interaktivno sučelje u terminalu. Više informacija se može naći [ovdje](https://www.raspberrypi.com/documentation/computers/configuration.html#raspi-config).
+
+Moguće je konfiguraciju preko ```raspi-config``` izvršavati na neinteraktivni način opcijom ```nonint```, primjerice:
 
 ```
-sudo raspi-config nonint do_hostname [ime po želji]
-sudo raspi-config nonint do_change_locale en_US.UTF-8 UTF-8
-sudo raspi-config nonint do_change_timezone Europe/Zagreb
+sudo raspi-config nonint do_hostname raspberrypi-1 # Postavlja ime mikroračunala
+sudo raspi-config nonint do_change_locale en_US.UTF-8 UTF-8 # Postavlja regionalne postavke sustava
+sudo raspi-config nonint do_change_timezone Europe/Zagreb # Postavlja vremensku zonu
 ```
 
-### Daljnje upute
+## Korisni softverski alati
 
-Preporučuje se slijediti sljedeće linkove:
+Za ispis informacija o monitorima može se koristiti alat ```kmsprint```. Primjerice, ispis svih načina rada povezanih monitora može se dobiti izvršavajući:
+
+```
+kmsprint -m
+```
+
+Ispis logova VideoCore grafičkog procesora može se dobiti alatom ```vclog```. Primjerice, ispis informativnih poruka može se dobiti naredbom:
+
+```
+sudo vclog --msg
+```
+
+Ispis asertivnih poruka može se dobiti naredbom:
+
+```
+sudo vclog --assert
+```
+
+[Općenite informacije o VideoCore grafičkom procesoru](https://www.raspberrypi.com/documentation/computers/os.html#vcgencmd) mogu se dobiti naredbom ```vcgencmd```. Kao primjer:
+
+- ```vcgencmd vcos version``` - ispiši verziju firmvera
+- ```vcgencmd vcos log status``` - ispiši stanje logova raznih dijelova firmwarea grafičkog procesora
+- ```vcgencmd get_throttled``` - ispiši razlog usporavanja sustava (primjerice zbog pregrijavanja), vraća specifični heksadekadski broj (0x0 - nema usporavanja, 0x1 - pad napona detektiran, 0x2 - maksimalna frekvencija ARM procesora dosegnuta, ...)
+- ```vcgencmd measure_temp``` - temperatura sustava na čipu
+- ```vcgencmd measure_clock <arm|core|h264|uart|hdmi|dpi|...>``` - frekvencija specificiranog takta
+- ```vcgencmd measure_volts <core|sdram_c|sdram_i|sdram_p>``` - napon specificiranog bloka (VideoCore jezgre ili SDRAM dijelova)
+- ```vcgencmd otp-dump``` - ispis sadržaja *OTP - One Time Programmable* memorije
+- ```vcgencmd codec_enabled <AGIF|FLAC|H263|H264|MJPA|MJPB|...>``` - ispis je li omogućen specifični kodek
+- ```vcgencmd mem_oom```- ispis statistike vezane uz *OOM - Out Of Memory* događaje na grafičkom procesoru
+- ```vcgencmd read_ring_osc``` - ispis brzine, napona i temperature prstenastog oscilatora
+
+## Daljnje upute
+
+Korisne poveznice:
 
 * informacije o *boot* procesu i jezgri: [ovdje](boot-process-and-kernel)
 * konfiguriranje mrežnih postavki: [ovdje](networking)
