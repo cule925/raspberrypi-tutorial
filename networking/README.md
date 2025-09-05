@@ -1,155 +1,207 @@
-# KONFIGURIRANJE MREŽNIH POSTAVKI
+# KONFIGURACIJA MREŽNIH POSTAVKI
 
-Konfiguriranje mrežnih postavki Raspberry Pi OS-a od verzije Bookworm radi se skupom alata [*NetworkManager*](https://networkmanager.dev/). Omogućuje olakšano upravljanje Ethernet, Wi-Fi i mobilnim mrežnim sučeljima. Nudi potporu za većinu sigurnosnih protokola, primjerice bežični WPA, WPA2 (Personal i Enterprise), WPA3 (Personal i Enterprise), žičani 802.1x, MACsec i VPN-ove.
+Konfiguracija mrežnih postavki Raspberry Pi 4B mikroračunala se najčešće radi uz pomoć [*NetworkManagera*](https://networkmanager.dev/). Skup alata omogućuje olakšano upravljanje Ethernet, Wi-Fi i mobilnim mrežnim sučeljima. Nudi potporu za većinu sigurnosnih protokola, primjerice:
 
-Kako bi se moglo upravljati mrežnim postavkama, potrebno je u pozadini imati pokrenut servis *NetworkManager*. Kod Raspberry Pi OS-a servis *NetworkManager* se obično pokreće pri pokretanju. U slučaju da to nije tako, servisu je potrebno omogućiti pokretanje pri svakom pokretanju mikroračunala naredbom:
+- WPA/WPA2/WPA3
+- žičani 802.1x
+- MACsec
+- VPN
 
-```
-sudo systemctl enable NetworkManager
-```
-
-Onemogućivanje servisa radi se naredbom ```sudo systemctl disable NetworkManager```.
-
-Trenutačno pokretanje servisa radi se naredbom:
+Postavljanje mrežnih postavki radi servis ```NetworkManager```, a sa servisom je moguće komunicirati alatom ```nmcli```. Kod Raspberry Pi OS-a, servis je zadano omogućen, dakle on bi trebao biti već pokrenut prilikom pokretanja OS-a. Ako nije pokrenut, to se može napraviti naredbom:
 
 ```
 sudo systemctl start NetworkManager
 ```
 
-Zaustavljanje rada servisa se radi naredbom ```sudo systemctl start NetworkManager```, a ponovno pokretanje rada servisa naredbom ```sudo systemctl start NetworkManager```.
+Zaustavljanje servisa može se napraviti naredbom ```sudo systemctl stop NetworkManager```. Kako bi omogućili automatsko pokretanje servisa pri svakom ponovnom pokretanju OS-a, potrebno je izvršiti naredbu:
+
+```
+sudo systemctl enable NetworkManager
+```
+
+A ako se servis ne želi pokretati pri svakom ponovnom pokretanju OS-a, potrebno je izvršiti naredbu ```sudo systemctl disable NetworkManager```.
 
 ## Konfiguracijske datoteke
 
-Iako *NetworkManager* servis ima zadanu konfiguracijsku datoteku */etc/NetworkManager/NetworkManager.conf*, vlastite konfiguracije se mogu dodavati u direktoriju */etc/NetworkManager/conf.d*. Nadalje, neki paketi mogu dodavati svoje konfiguracije u direktoriju */usr/lib/NetworkManager/conf.d* ili */run/NetworkManager/conf.d*. Redoslijed parsiranja konfiguracijskih datoteka je sljedeći:
+Zadana konfiguracijska datoteka za NetworkManager servis je ```/etc/NetworkManager/NetworkManager.conf```. Dodatne konfiguracije s ```.conf``` nastavkom mogu se dodati u zasebnim direktorijima. Datoteke tih direktorija, uključujući i samu zadanu konfiguracijsku datoteku, parsiraju se sljedećim redoslijedom:
 
-- datoteke u */usr/lib/NetworkManager/conf.d*
-- datoteke u */run/NetworkManager/conf.d*
-- datoteka */etc/NetworkManager/NetworkManager.conf*
-- datoteke u */etc/NetworkManager/conf.d*
+- ```/usr/lib/NetworkManager/conf.d``` - paketi pri instalaciji najčešće dodaju svoje konfiguracije ovdje
+- ```/run/NetworkManager/conf.d``` - dodatne konfiguracije koje paketi mogu dodati
+- ```/etc/NetworkManager/NetworkManager.conf```
+- ```/etc/NetworkManager/conf.d``` - vlastite konfiguracije
 
-Servis *NetworkManager* za svaki žičani Ethernet port namješta zadane postavke, primjerice DHCPv4 autokonfiguraciju ili IPv6 autokonfiguraciju što u poslužiteljskim okolinama možda i nije poželjno. Ove konekcije se mogu izlistati naredbom ```nmcli connection show``` te imaju naziv *Wired connection 1*, *Wired connection 2* i slično, ovisno koliko Ethernet sučelja postoji na računalu. Kako bi se to onemogućilo, u */etc/NetworkManager/NetworkManager.conf* datoteci je potrebno dodati:
-
-```
-[main]
-no-auto-default=*
-```
-
-Ovo će onemogućiti stvaranje zadanih konfiguracija za sva Ethernet sučelja (oznaka *). Oznaka [sekcije](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/NetworkManager.conf.html) *main* označava da se sljedeće postavke odnose na općenite postavke *NetworkManagera*.
-
-Također, *NetworkManager* aktivira mrežno Ethernet mrežno sučelje samo ako postoji fizička konekcija kabelom na drugo Ethernet sučelje (odnosno *carrier*). Ovo možda nije pogodno za neke aplikacije koje zahtijevaju da sučelje bude odmah aktivno pri pokretanju računala. Dakle, ako se želi onemogućiti čekanje na fizičku konekciju i odmah omogućiti Ethernet sučelje, potrebno je u datoteku */etc/NetworkManager/NetworkManager.conf* dodati:
+Svako sljedeće parsiranje prepisuje prethodne konfliktne konfiguracije. Nakon uređivanja konfiguracija potrebno ih je učitati naredbom:
 
 ```
-[main]
-ignore-carrier=*
+sudo systemctl reload NetworkManager
 ```
 
-Ovo će onemogućiti čekanje na fizičku konekciju za sva Ethernet sučelja (oznaka *) i *NetworkManager* će ih odmah omogućiti. Oznaka [sekcije](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/NetworkManager.conf.html) *main* označava da se sljedeće postavke odnose na općenite postavke.
+Informacije o ```NetworkManager.conf``` datoteci mogu se naći [ovdje](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/NetworkManager.conf.html).
 
-Općenito, nakon uređivanja bilo kojih konfiguracijskih datoteka *NetworkManager* servisa, potrebno ih je ponovno učitati naredbom:
+## Upravljanje sučeljima
 
-```
-systemctl reload NetworkManager
-```
-
-### Isključivanje upravljanja sučeljem
-
-Uobičajeno, *NetworkManager* servis upravlja svim mrežnim sustavima na sustavu. Ako se želi trenutačno isključiti pojedino mrežno sučelje iz upravljanja *NetworkManager* servisom, potrebno je izvršiti naredbu:
+Servis NetworkManager zadano upravlja svim dostupnim mrežnim sučeljima u sustavu. Sva sučelja koja se nalaze u sustavu mogu se izlistati naredbom:
 
 ```
-nmcli device set enp1s0 managed no
+sudo nmcli device
 ```
 
-U slučaju da se ova postavka želi trajno primijenit, potrebno je u */etc/NetworkManager/NetworkManager.conf* datoteci ili u vlastitu *.conf* datoteku u direktoriju */etc/NetworkManager/conf.d* dodati:
+Ako se neko sučelje želi ukloniti od nadzora NetworkManagera, to se može napraviti naredbom:
 
 ```
-[device-<ime sučelja>-unmanage]
-match-device=interface-name:<ime sučelja>
+sudo nmcli device set <ime mrežnog sučelja> managed no
+```
+
+Ako ga se opet želi staviti pod nadzor, to se može napraviti naredbom:
+
+```
+sudo nmcli device set <ime mrežnog sučelja> managed yes
+```
+
+Prethodne naredbe neće napraviti postavke trajne. Da bi se trajno uklonilo mrežno sučelje od nadzora NetworkManagera, potrebno je dodati vlastitu konfiguracijsku datoteku u ```/etc/NetworkManager/conf.d``` direktorij. Datoteka mora imati sljedeći sadržaj:
+
+```
+[device-<ime mrežnog sučelja>-unmanage]
+match-device=interface-name:<ime mrežnog sučelja>
 managed=0
 ```
 
-Naravno, potrebno je opet učitati konfiguracijske datoteke naredbom ```systemctl reload NetworkManager```.
+Potrebno je ponovno učitati konfiguracije alatom ```nmcli```.
 
-## Osnovno korištenje
+### Upravljanje Wi-Fi sučeljem
 
-Za osnovno korištenje *NetworkManager* servisa koristi se alat *nmcli*. Neke osnovne naredbe su:
+Za razliku od standardnog Ethernet sučelja gdje se uređaj povezuje na mrežu automatski spajanjem UTP kabela, korisnik za Wi-Fi sučelje mora odabrati mrežu i potencijalno upisati lozinku za uspješno povezivanje na mrežu.
 
-- ```sudo nmcli device``` - izlistaj sva mrežna sučelja
-- ```sudo nmcli radio wifi on``` - uključi sve Wi-Fi radije
-- ```sudo nmcli radio wifi off``` - isključi sve Wi-Fi radije
-- ```sudo nmcli device wifi list``` - izlistaj skenirane Wi-Fi mreže
-- ```sudo nmcli device wifi connect [SSID mreže ili BSSID mreže] password [zaporka]``` - spoji se na ciljanu Wi-Fi mrežu primarnim mrežnim sučeljem
-- ```sudo nmcli device wifi connect [SSID mreže ili BSSID mreže] password [zaporka] ifname [bežično mrežno sučelje] name [ime profila konekcije koji će se stvoriti]``` - spoji se na ciljanu Wi-Fi mrežu ciljanim sučeljem
-- ```sudo nmcli device disconnect ifname [mrežno sučelje]``` - odspoji mrežno sučelje s mreže
-- ```sudo nmcli connection show``` - pokaži sve profile konekcije
-- ```sudo nmcli connection up [ime profila konekcije ili UUID profila konekcije]``` - poveži se na mrežu koristeći profil konekcije
-- ```sudo nmcli connection down [ime profila konekcije ili UUID profila konekcije]``` - odspoji se s mreže koristeći profil konekcije
-
-### Profili konekcije
-
-Profili konekcije su konfiguracije kojima upravlja *NetworkManager* i one se spremaju na lokaciji */etc/NetworkManager/system-connections* osim automatski stvorenih žičanih Ethernet profila konekcija (*Wired connection 1*, *Wired connection 2*, ...). Profili konekcije se mogu uređivati naredbom:
+Paljenje ili gašenje radija svih Wi-Fi sučelja u sustavu može se napraviti naredbom:
 
 ```
-sudo nmcli connection edit [ime profila konekcije ili UUID profila konekcije]
+sudo nmcli radio wifi <on|off>
 ```
 
-Moguće je stvoriti i vlastitu konfiguraciju profila konekcije naredbom:
+#### Skeniranje i izlistavanje mreža
+
+Servis NetworkManager periodično izvršava skeniranje za obližnje Wi-Fi mreža. Međutim, ako se želi odmah skenirati za obližnje Wi-Fi mreže to se može napraviti naredbom:
 
 ```
-sudo nmcli connection add [argumenti]
+sudo nmcli device wifi rescan
 ```
 
-Korištenjem ```nmcli device connection add ...``` ili ```nmcli device wifi connect ...``` servis *NetworkManager* automatski stvara datoteku profila konekcije u direktoriju */etc/NetworkManager/system-connections*.
-
-Isto tako, moguće ih je i ukloniti naredbom:
+Naredba će pokrenuti skeniranje na svim Wi-Fi sučeljima. Izlistavanje liste pronađenih mreža od zadnjeg skeniranja može se napraviti naredbom:
 
 ```
-sudo nmcli connection delete [ime profila konekcije ili UUID profila konekcije]
+sudo nmcli device wifi list
 ```
 
-Konfiguracije profila konekcija je moguće stvoriti i na drugi način: izravno stvaranje datoteka oblika *[ime profila konekcije].nmconnection* i popunjavanje odgovarajućih sekcija s konfiguracijama. **Ovdje treba bit vrlo oprezan pri konfiguraciji jer se zbog malih grešaka NetworkManager servis može ponašati nepredviđeno.**
+#### Spajanje na mrežu i odspajanje s mreže
+
+Spajanje na mrežu sa specifičnog Wi-Fi sučelja može se napraviti naredbom:
+
+```
+sudo nmcli device wifi connect <SSID ili BSSID mreže> password <zaporka> ifname <Wi-Fi sučelje>
+```
+
+Ako se izostavi ime sučelja, servis NetworkManager će koristiti prvo slobodno sučelje, a ako prvo slobodno sučelje ne postoji, koristit će zadano primarno sučelje (najprioritetnije Wi-Fi sučelje zadano metrikom). Prvim spajanjem na mrežu stvorit će se profil konekcije koji će sadržavati sve informacije o mrežnim konfiguracijama za tu mrežu (SSID, zaporka, sučelje koje se koristi za povezivanje i slično).
+
+Odspajanje s mreže sa specifičnog Wi-Fi sučelja može se napraviti naredbom:
+
+```
+sudo nmcli device disconnect ifname <Wi-Fi sučelje>
+```
+
+## Profili konekcije
+
+Profili konekcije su mrežne konfiguracije kojima upravlja NetworkManager te se oni spremaju na lokaciju ```/etc/NetworkManager/system-connections```. Jedini profili konekcija koji se ne spremaju na toj lokaciji su automatski stvoreni profili Ethernet sučelja. Svi profili u sustavu mogu se vidjeti naredbom:
+
+```
+sudo nmcli connection show
+```
+
+### Onemogućivanje automatske aktivacije profila Ethernet sučelja
+
+NetworkManager za sva Ethernet sučelja u sustavu ima pripremljene profile za aktivaciju u slučaju da se fizički spoji kabel na sučelje. Ovo možda nije uvijek poželjno jer ti profili mogu imati primjerice postavljenu DHCPv4 autokonfiguraciju ili DHCPv6 autokonfiguraciju gdje to možda i nije poželjno. Kako bi onemogućila automatska aktivacija profila, potrebno je u datoteci ```/etc/NetworkManager/NetworkManager.conf``` dodati:
+
+```
+[main]
+no-auto-default=<ime sučelja>
+```
+
+Potrebno je ponovno učitati konfiguracije alatom ```nmcli```.
+
+### Aktivacija mrežnog sučelja odmah pri pokretanju
+
+NetworkManager aktivira profil Ethernet sučelja kad se računalo spoji na mrežni uređaj kabelom odnosno kad se pojave električni signali na sučelju. Ovo možda nije pogodno za aplikacije koje zahtijevaju da sučelje bude aktivirano odmah pri pokretanju. Ako se želi odmah omogućiti Ethernet sučelje, bilo da je spojen kabel ili ne, u ```/etc/NetworkManager/NetworkManager.conf``` datoteku je potrebno dodati:
+
+```
+[main]
+ignore-carrier=<ime sučelja>
+```
+
+Potrebno je ponovno učitati konfiguracije alatom ```nmcli```.
+
+### Korištenje vlastitih profila konekcije
+
+Iako spajanje s Ethernet ili Wi-Fi sučelja automatski aktivira ili stvara i aktivira profile konekcije, moguće je unaprijed stvoriti vlastiti profil konekcije (vlastite IP adrese DNS poslužitelja, statičke adrese i slično).
+
+Naredba za stvaranje profila konekcije je sljedeća:
+
+```
+sudo nmcli connection add <vrsta konekcije> <argumenti>
+```
+
+Vrsta konekcija ima mnogo, a pogotovo argumenata za svaku od tih vrsta. Više u dokumentaciji [ovdje](https://networkmanager.dev/docs/api/latest/nmcli.html).
+
+Uređivanje profila konekcije može se napraviti naredbom:
+
+```
+sudo nmcli connection edit <ime profila konekcije ili UUID profila konekcije>
+```
+
+Brisanje profila konekcije može se napraviti naredbom:
+
+```
+sudo nmcli connection delete <ime profila konekcije ili UUID profila konekcije>
+```
+
+### Aktivacija i deaktivacija profila konekcije
+
+Profil konekcije može se aktivirati odnosno deaktivirati naredbom:
+
+```
+sudo nmcli connection <up|down> <ime profila konekcije ili UUID profila konekcije>
+```
 
 ## Konfiguracija Raspberry Pi mikroračunala kao pristupna točka
 
-Kako bi se Raspberry Pi mikroračunalo konfiguriralo kao [pristupna točka](https://www.raspberrypi.com/documentation/computers/configuration.html#enable-hotspot) na mrežu, ono mora biti fizički spojeno na mrežu uz pomoć Etherneta. Tek nakon toga, moguće je postaviti uređaj kao pristupnu točku na mrežu. Naredba za stvaranje profila konekcije imena *Raspberry Pi Hotspot* koja koristi sučelje *wlan0* može se napraviti naredbom:
+Raspberry Pi mikroračunalo moguće je konfigurirati kao [pristupnu točku (*eng. Access Point*)](https://www.raspberrypi.com/documentation/computers/configuration.html#enable-hotspot). Za ovakvu konfiguraciju potrebno je spojiti Raspberry Pi na mrežni uređaj (primjerice usmjernik) uz pomoć Ethernet sučelja dok će Wi-Fi sučelje odašiljati signal preko kojeg će se drugi uređaji spajati na mrežu. Naredba za stvaranje profila konekcije koje će koristiti Wi-Fi sučelje *wlan0* za odašiljanje signala bit će:
 
 ```
-sudo nmcli device wifi hotspot con-name "Raspberry Pi Hotspot" ifname wlan0 ssid [ime mreže koje će biti vidljivo skeniranjem] password [zaporka pristupa mreži]
+sudo nmcli device wifi hotspot con-name <ime profila konekcije> ifname wlan0 ssid <ime mreže koje će biti vidljivo skeniranjem> password <zaporka pristupa mreži>
 ```
 
-U ovom slučaju sav se promet koji dođe na sučelje *wlan0* prosljeđuje na *default gateway* odnosno *eth0* sučelje.
+U ovom slučaju će se sav promet sa sučelja *wlan0* prosljeđivati na *default gateway* odnosno sučelje *eth0* i usput raditi mrežnu translaciju adresa (*NAT - Network Address Translation*). Sučelje koje se koristi kao *default gateway* može se vidjeti naredbom ```ip route```. Deaktivacija, aktivacija ili brisanje profila konekcije moguće je već navedenim ```nmcli connection ...``` naredbama.
 
-Ako se pristupna točka želi onemogućiti to se može naredbom:
-
-```
-sudo nmcli connection down "Raspberry Pi Hotspot"
-```
-
-Brisanje samog profila konekcije se može napraviti naredbom:
-
-```
-sudo nmcli connection delete "Raspberry Pi Hotspot"
-```
-
-Uređaji koji su izravno spojeni na glavnoj mreži **ne mogu** direktno komunicirati s uređajima koji su spojeni preko pristupne točke.
+Raspberry Pi mikroračunalo će u ovom slučaju imati ulogu usmjernika.
 
 ## Konfiguracija Raspberry Pi mikroračunala kao mrežni most
 
-U slučaju da se Raspberry Pi mikroračunalo želi konfigurirati kao mrežni most, prvo je potrebno stvoriti sučelje mrežnog mosta, primjerice imena *bridge0* u definiciji profila konekcije imena *Bridge*:
+Raspberry Pi mikroračunalo moguće je konfigurirati kao i [mrežni most](https://www.raspberrypi.com/documentation/computers/configuration.html#use-your-raspberry-pi-as-a-network-bridge). Za ovakvu konfiguraciju potrebno je spojiti Raspberry Pi na mrežni uređaj (primjerice usmjernik) uz pomoć Ethernet sučelja dok će Wi-Fi sučelje odašiljati signal preko kojeg će se drugi uređaji spajati na mrežu.
+
+Prvo je potrebno stvoriti sučelje mrežnog mosta, primjerice imena ```bridge0```.
 
 ```
 sudo nmcli connection add type bridge con-name "Bridge" ifname bridge0
 ```
 
-Zatim je potrebno dodati Ethernet sučelje *eth0* kao *slave* sučelju *bridge0* u definiciji profila konekcije imena *Ethernet Slave*:
+Onda je potrebno dodati Ethernet sučelje *eth0* kao *slave* sučelju *bridge0*:
 
 ```
 sudo nmcli connection add type ethernet slave-type bridge con-name "Ethernet Slave" ifname eth0 master bridge0
 ```
 
-Nakon toga je potrebno stvoriti profil konekcije *Wireless Slave* koja će postaviti bežično sučelje *wlan0* u način rada pristupne točke (nije potrebna zaporka). Na kraju je potrebno modificirati profil konekcije *Wireless Slave* tako što je potrebno dodati *wlan0* sučelje kao *slave* sučelju *bridge0*:
+Nakon toga je potrebno stvoriti profil konekcije koji će postaviti bežično sučelje *wlan0* u način rada pristupne točke (nije potrebna zaporka). Na kraju je potrebno modificirati profil konekcije *Wireless Slave* tako što je potrebno dodati *wlan0* sučelje kao *slave* sučelju *bridge0*:
 
 ```
-sudo nmcli device wifi hotspot con-name "Wireless Slave" ifname wlan0 ssid [ime mreže koje će biti vidljivo skeniranjem]
+sudo nmcli device wifi hotspot con-name "Wireless Slave" ifname wlan0 ssid <ime mreže koje će biti vidljivo skeniranjem>
 sudo nmcli connection modify "Wireless Slave" master bridge0
 ```
 
@@ -163,7 +215,7 @@ sudo nmcli connection up "Wireless Slave" --ask
 
 Posljednja naredba će pitati za zaporku koja će se koristiti za prijavu na pristupnu točku.
 
-Ako je potrebno ukloniti konfiguraciju, to se radi sljedećim deaktivacijama i brisanjem profila konekcija, odnosno naredbama:
+Konfiguracija se može ukloniti sljedećim naredbama:
 
 ```
 sudo nmcli connection down "Wireless Slave"
@@ -173,6 +225,4 @@ sudo nmcli connection delete "Wireless Slave"
 sudo nmcli connection delete "Ethernet Slave"
 sudo nmcli connection delete Bridge
 ```
-
-Uređaji koji su izravno spojeni na glavnoj mreži **mogu** direktno komunicirati s uređajima koji su spojeni preko pristupne točke.
 
