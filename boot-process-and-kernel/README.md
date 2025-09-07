@@ -1,151 +1,123 @@
 # BOOT PROCES I JEZGRA
 
-Od Raspberry Pi 4B serije mikroračunala pa nadalje, ne koristi se više datoteka *bootcode.bin* kao *bootloader* već se koristi ugrađeni [SPI flash EEPROM čip](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#eeprom-boot-flow) koji sadržava *boot* kod.
+Raspberry Pi 4B [boot proces](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#eeprom-boot-flow) podijeljen je u više koraka. Koristi se kod u ROM koji se nalazi u BCM2711 čipu (*OTP Memory - One Time Programmable Memory*), EEPROM koji se nalazi na pločici i bootloader datoteka na nekom od umetnutog vanjskog medija (SD kartica, USB flash, ...).
 
-Kada se uključi Raspberry Pi 4B mikroračunalo, grafički procesor VideoCore 6 koji se nalazi u sustavu na čipu (*eng. System on Chip - SoC*) se pokreće i izvršava obje faze *bootloadera*, ARM procesor ostaje i tek se pali nakon što se Linux jezgra učita.
+Dakle, boot proces kada se Raspberry Pi 4B pokrene je sljedeći:
 
-Prva faza *bootloadera*:
+**BOOTLOADER IZ ROM OTP MEMORIJE (1. FAZA BOOTLOADERA):**
 
-- čita se OTP (*eng. One Time Programmable*) memorija kako bi se utvrdilo je li definiran *nRPIBOOT* GPIO
-	- odabrani *nRPIBOOT* GPIO pin može biti jedan od sljedećih: 2, 4, 5, 6, 7 i 8, preporučuje se koristiti 8 jer je on inicijalno u stanju visoko
-- ako je *nRPIBOOT*:
-	- u stanju visoko ili uopće nije definiran, provjerava se OTP kako bi se ustanovilo može li se učitati *recovery.bin* s SD kartice:
-		- ako je omogućeno učitavanje *recovery.bin* s SD kartice, provjerava se SD kartica za datoteku *recovery.bin*:
-			- ako je *recovery.bin* pronađen, pokreće se i ažurira se EEPROM
-		- provjerava se EEPROM za drugu fazu *bootloadera*
-	- u stanju nisko, *recovery.bin* se pokušava s USB uređaja:
-		- ako je pronađen *recovery.bin* s USB uređaja, pokreće se i ažurira se EEPROM, inače se ponovno pokušava
+- pokreće se VideoCore grafički procesor i on izvršava kod u ROM OTP-u koji se učita u cache memoriju
+	- provjerava se jeli kod definira nRPIBOOT pin (koristi se kod Raspberry Pi Compute Module 4 mikroračunala)
+	- ako je nRPIBOOT u logičkom stanju visoko ili uopće nije definiran:
+		- provjerava se postoji li datoteka ```recovery.bin``` na **boot** particiji na SD kartici/eMMC memoriji
+			- ako postoji učitava ju se u memoriju i izvršava
+				- ažurira se EEPROM ```pieeprom.bin``` ili ```pieeprom.upd``` datotekom na **boot** particiji na SD kartici/eMMC memoriji
+			- učitava se bootloader iz EEPROM-a (2. faza bootloadera)
+				- ako se uspije učitat pokreće ga se, inače se nastavlja dalje
+	- ponavlja se:
+		- provjerava se postoji li datoteka ```recovery.bin``` na **boot** particiji na USB flashu na USB portu (ako je uopće umetnut)
+			- ako postoji učitava ju se u memoriju i izvršava
+				- ažurira se EEPROM ```pieeprom.bin``` ili ```pieeprom.upd``` datotekom na **boot** particiji na SD kartici/eMMC memoriji
+			- učitava se bootloader iz EEPROM-a (2. faza bootloadera)
+				- ako se uspije učitat pokreće ga se, inače se nastavlja dalje
 
-Druga faza *bootloadera*:
+**BOOTLOADER IZ EEPROMA (2. FAZA BOOTLOADERA):**
 
-- inicijaliziraju se taktovi i SDRAM
+- inicijalizira se takt i SDRAM
 - čita se EEPROM konfiguracijska datoteka
-- čita se *PM_RSTS* registar kako bi se ustanovilo traži li se HALT:
-	- provjeravaju se *POWER_OFF_ON_HALT* i *WAKE_ON_GPIO* u konfiguracijskoj datoteci:
-		- ako je *POWER_OFF_ON_HALT* u 1 i *WAKE_ON_GPIO* u 0 iskorištava se PMIC (*eng. Power Management Integrated Circuit*) kako bi se isključio sustav
-		- ako je *WAKE_ON_GPIO* u 1 omogućuje se prekid na padajući brid na GPIO 3 koji će probuditi sustav (GPIO 3 je u stanju visoko i ako se povuče u stanje nisko događa se prekid)
-		- sustav ide u spavanje
-- čita se *BOOT_ORDER* parametar iz konfiguracijske datoteke, vrijednosti u polju biti:, *STOP*, *SD CARD*, *NETWORK*, *USB-MSD*, *NVME*, ...
-	- *RESTART* - skače natrag na prvo polje u *BOOT_ORDER* parametru
-	- *STOP* - ispisuje da *start.elf* nije pronađen, čeka zauvijek
-	- *SD CARD*
-		- učitava *firmware* s SD kartice
-		- ako je uspješno učitan pokreće ga, ako nije nastavlja dalje po polju
-	- *NETWORK*
-		- iskorištava DHCP da bi dobio IP adresu, učitava *firmware* s TFTP poslužitelja
-		- ako je uspješno učitan pokreće ga, ako nije nastavlja dalje po polju
-	- *USB-MSD*
-		- po detektiranim USB uređajima:
-			- učitava *firmware* s USB-a
-			- ako je uspješno učitan pokreće ga, ako nije nastavlja dalje sljedećem USB uređaju
-		- ako nije pronađen *firmware* na ni jednom USB uređaju nastavlja dalje po polju
+- čita se ```PM_RSTS``` registar kako bi se ustanovilo traži li se HALT:
+	- provjeravaju se ```POWER_OFF_ON_HALT``` i ```WAKE_ON_GPIO``` postavke u EEPROM konfiguraciji
+	- ako je ```POWER_OFF_ON_HALT == 1``` i ```WAKE_ON_GPIO == 0``` koristi se PMIC (*eng. Power Management Integrated Circuit*) kako bi se isključio sustav
+	- inače ako je ```WAKE_ON_GPIO == 1``` omogućuje se prekid na padajući brid na GPIO 3 za izlazak iz stanja mirovanja (*eng. sleep mode*)
+	- ulazi se u stanje mirovanja
+- ponavlja se:
+	- čita se ```BOOT_ORDER``` parametar iz EEPROM konfiguracijske datoteke
+	- ako je *boot* parametar ```RESTART``` (0xf) vraća se natrag na prvi *boot* način definiran u ```BOOT_ORDER``` parametru
+	- ako je *boot* parametar ```STOP``` (0xe) zaustavlja se *boot* proces, ispisuje se poruka greške i zaustavlja se sustav (*HALT* stanje)
+	- ako je *boot* parametar ```SD_CARD``` (0x1) isprobava se učitavanje firmware u SDRAM s **boot** particije SD kartice
+		- u slučaju uspjeha pokreće se ```start_*.elf``` firmware, inače se nastavlja dalje
+	- ako je *boot* parametar ```NETWORK``` (0x2):
+		- pravi se DHCP zahtjev za IP adresu (preko Ethernet sučelja)
+		- učitava se firmware s DHCP poslužitelja ili statički definiranog TFTP poslužitelja
+		- u slučaju uspjeha pokreće se ```start_*.elf``` firmware koja se učitava u SDRAM, inače se nastavlja dalje
+	- ako je *boot* parametar ```USB-MSD``` (0x4):
+		- redom se ide po dostupnim USB flash uređajima priključenim na USB portovima:
+			- proba se učitati u SDRAM ```start_*.elf``` firmware s **boot** particije USB flasha
+			- u slučaju uspjeha pokreće se firmware, inače se nastavlja dalje
+	- ostali *boot* parametri mogu se vidjeti [ovdje](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#BOOT_ORDER)
 
-Nakon izvršavanja *firmwarea* te učitavanje Linux jezgre i njenih parametara, VideoCore 6 budi ARM procesor i prepušta mu kontrolu.
+Parametar ```BOOT_ORDER``` je 32 bitni cijeli broj gdje svaka četvrtina bitova (heksadekadski broj) predstavlja *boot* parametar krenuvši od najmanje značajne četvrtine. Dakle, ako je primjerice ```BOOT_ORDER=0xf14``` onda se izvršava redom ```USB-MSD (0x4)```, ```SD_CARD (0x1)``` pa ```RESTART (0xf)```.
 
-Trenutačna konfiguracija koju koristi *bootloader* se može vidjeti naredbom:
+Trenutačna konfiguracija EEPROM bootloadera može se vidjeti na Raspberry Pi mikroračunalu naredbom:
 
 ```
 sudo rpi-eeprom-config
 ```
 
-Uređivanje konfiguracije koju će koristiti *bootloader* pri sljedećem ponovnom pokretanju može se napraviti naredbom:
+Uređivanje parametara EEPROM bootloadera kao što su ```BOOT_ORDER```, ```POWER_OFF_ON_HALT```, ```WAKE_ON_GPIO``` i [drugi](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#configuration-properties) može se napraviti naredbom:
 
 ```
 sudo -E rpi-eeprom-config --edit
 ```
 
-Stvorit će se datoteke oblika *pieeprom.\** u */boot/firmware* direktoriju koje će sadržavati novu konfiguraciju koja će se pisati u EEPROM. Nova konfiguracija će se učitati u EEPROM u drugoj boot fazi, nakon čega će se EEPROM ponovno pokrenuti odnosno ponovit će se druga boot faza.
+U ```/boot/firmware``` stvorit će se datoteke ```recovery.bin``` (*recovery* izvršna datoteka) i ```pieeprom.upd``` (novi EEPROM bootloader). Također, stvorit će se ```pieeprom.sig``` SHA256 sažetak ```pieeprom.upd``` bootloadera. Kada se proces ažuriranja EEPROM-a završi, ```recovery.bin``` će se preimenovat u ```recovery.000``` kako se ažuriranje ne bi ponovno izvršavalo pri sljedećem ponovnom pokretanju. Ako se novi EEPROM bootloader nazove ```pieeprom.bin```, preimenovanje ```recovery.bin``` u ```recovery.000``` se neće dogoditi (korisnik mora sam obrisati ili preimenovati datoteku).
 
-Ako se želi spriječiti ovo, može se izvršiti naredba:
+Dakle, ažuriranje će se dogoditi pri ponovnom pokretanju. Ako se želi zaustaviti proces ažuriranja, potrebno je izvršiti naredbu:
 
 ```
 sudo rpi-eeprom-update -r
 ```
 
-## Sadržaj firmware direktorija i boot proces
+Naredba će obrisati datoteke ```recovery.bin``` i ```pieeprom.*```.
 
-Tijekom prve i druge faze boot procesa, Raspberry Pi mikroračunalo pristupa FAT32 formatiranoj particiji na SD kartici (i drugim pohranama). Shema particioniranja pohrana mora biti MBR (*eng. Master Boot Record*). Ova particija se u Raspberry Pi OS-u montira na lokaciji */boot/firmware* i sadrži [sljedeće datoteke](https://www.raspberrypi.com/documentation/computers/configuration.html#boot-folder-contents):
+**IZVRŠAVANJE GPU FIRMWAREA (3. FAZA BOOTLOADERA)**
 
-- *bootcode.bin*
-	- *bootloader* za starija Raspberry Pi mikroračunala, Raspberry Pi 4B ne koristi ovaj *bootloader* već SPI flash EEPROM
-- *start\*.elf*
-	- osnovni *firmware* kojeg izvršava VideoCore grafički procesor
-- *fixup\*.dat*
-	- linker datoteke koje odgovaraju svakoj *start\*.elf* datoteci
-- *\*.dtb*
-	- sadrži hardverske definicije za određene modele Raspberry Pi mikroračunala, predstavlja stablo uređaja u strojnom kodu
-	- učitava ju *firmware*
-	- za Raspberry Pi 4B se koristi *bcm2711-rpi-4-b.dtb*
-- *config.txt*
-	- parametri za osnovni *firmware*
-	- sadrži informacije kako konfigurirati Raspberry Pi, primjerice brzinu takta, ukupnu memoriju, rezoluciju, hardverske opcije
-	- nešto slično konfiguriranju postavki u BIOS-u
-	- VideoCore grafički procesor ju čita i tako konfigurira sustav prije inicijalizacije ARM procesora
-- *issue.txt*
-	- sadrži informacije o datumu i *commit ID-u* Raspberry Pi OS distribucije
-- *initramfs\**
-	- privremeni datotečni sustav koji se učitava prije Linux jezgre u RAM
-	- za Raspberry Pi 4B se koristi *initramfs8.img*
-- *cmdline.txt*
-	- sadrži parametre koje će se proslijediti Linux jezgri
-- *\*.img*
-	- Linux jezgra koja se učitava u RAM
-	- za Raspberry Pi 4B se koristi *kernel8.img*
+Učitani bootloader s EEPROM-a pokušava učitati jednu od ```start_*.elf``` [datoteka](https://www.raspberrypi.com/documentation/computers/configuration.html#device-trees-overlays-and-parameters) s **boot** particije. Specifično, za Raspberry Pi 4B, firmware datoteka je ```start4.elf``` i ona radi sljedeće:
 
-Također, sadrži i direktorij:
+- čita konfiguracijsku datoteku ```config.txt```, učitava s **boot** particije datoteku ```bcm2711-rpi-4-b.dtb``` stabla uređaja koje definira hardver i primjenjuje odgovarajuće ```*.dtbo``` **overlay** datoteke koje se također nalaze u **boot** particiji na to stablo uređaja
+- učitava Linux jezgru u SDRAM što je u slučaju Raspberry Pi 4B mikroračunala datoteka ```kernel8.img``` na **boot** particiji, prosljeđuje joj jezgrene parametre iz ```cmdline.txt``` datoteke i prosljeđuje pokazivač na stablo uređaja
+- predaje kontrolu ARM procesoru
 
-- *overlays*
-	- sadrži *\*.dtbo* datoteke koje dinamično mogu prilagođavati hardverske definicije definirane u *\*.dtb* datotekama
-	- opisuju dodatan hardver
+**LINUX BOOT FAZA**
 
-### Stablo uređaja
+ARM procesor pokreće Linux jezgru. Jezgra montira privremeni datotečni sustav ```initramfs8``` s **boot** particije koji sadrži najosnovnije alate i upravljačke programe. Inicijalizira osnovni hardver, a zatim montira **root** particiju i pokreće ```init``` proces.
 
-[Stablo uređaja (*eng. Device Tree - DT*)](https://www.raspberrypi.com/documentation/computers/configuration.html#part2) je način na koji Raspberry Pi Linux jezgra i *firmware* opisuju hardver koji postoji na sustavu. *Firmware* *start\*.elf* učitava odgovarajuću *\*.dtb* datoteku gledajući reviziju pločice iz OTP memorije i vrši izmjene nad njom kako bi ju dalje prilagodio odgovarajućoj pločici čitajući korisnički definiranu datoteku *config.txt* i odgovarajuće *\*.dtbo* datoteke iz direktorija *overlays*. Konačno, *firmware* prosljeđuje pokazivač na konačnu stablo uređaja Linux jezgri kao parametar tijekom učitavanja.
+Informacije Linux jezgre specifične za Raspberry Pi nalaze se [ovdje](https://www.raspberrypi.com/documentation/computers/linux_kernel.html).
 
-Sustavi arhitekture x86 su informacije o hardveru sustava imali opisane u ACPI tablicama koje bi nudio firmware (UEFI, BIOS, ...). Ugradbeni sustavi bazirani na ARM, RISC-V ili sličnim arhitekturama bi koristili podatkovne strukture prevedene u *bootloaderu*. Ovo se pokazalo nepraktično za ugradbene uređaje pa se predstavilo rješenje sa stablom uređaja koji ne bi ovisio o *bootloaderu* ili o operacijskom sustavu.
+## Sadržaj boot particije
 
-U slučaju Linuxa, stablo uređaja omogućuje da se Linux jezgra ne treba prevoditi za svaki hardver zasebno kako bi se dobila slika o postojećim uređajima već se informacije o uređajima na hardveru prosljeđuje kao pripremljenu struktura podataka odnosno stablo uređaja. Stablo uređaja sadrži informacije o procesoru, memoriji i periferijama. Podatci su strukturirani kao hijerarhija čvorova. Čvor može opisivati funkcionalnosti hardverske komponente te može sadržavati još čvorova koji opisuju neke podfunkcionalnosti. Gledajući analogiju s datotečnim sustavom, čvorovi bi bili kao nekakvi direktoriji, a svojstva datoteke.
+Boot particija Raspberry Pi OS-a sadrži sljedeće datoteke:
 
-Izvorni kod specifičnog stabla uređaja se piše u tekstualnom formatu DTS (*eng. Device Tree Source*) i datoteka mu ima nastavak *.dts*. Sintaksa izvornog koda je slična jeziku C. Međutim, mnogi mikroupravljači i mikroračunala imaju neke zajedničke dijelove, primjerice isti sustav na čipu. Kako bi se smanjila veličina same *.dts* datoteke, neki hardverski dijelovi kao što je sustav na čipu imaju svoje standardizirane opise u *.dtsi* datotekama koje se mogu uključiti u *.dts* datoteku. Za datoteku *.dtsi* se kaže da sadrži opis bazne konfiguracije dok *.dts* datoteka koja uključuje takve *.dtsi* datoteke modificira te bazne konfiguracije, unoseći im proširenja (ili ograničenja).
+- ```start_*.elf``` - firmware koji GPU izvršava
+- ```fixup_*.dat``` - linker datoteka za ```start_*.elf```
+- ```*.dtb``` - stabla uređaja za specifične Raspberry Pi modele, za Raspberry Pi 4B koristi se ```bcm2711-rpi-4-b.dtb```
+- ```config.txt``` - parametri za ```start_*.elf```, definira brzinu takta, ukupnu memoriju, rezoluciju, overlay datoteke za stablo uređaja (slično BIOS postavkama)
+- ```overlay/*.dtbo``` - overlay datoteke za stablo uređaja
+- ```issue.txt``` - informacije o datumu i *commit ID-u* Raspberry Pi OS distribucije
+- ```kernel*.img``` - Linux jezgra
+- ```cmdline.txt``` - parametri Linux jezgre
+- ```initramfs*``` - privremeni datotečni sustav za Linux jezgru
 
-Ove izvorne datoteke se prevode u binarnu uz prevoditelj DTC (*eng. Device Tree Compiler*).
+Raspberry Pi OS boot particija se inače montira na ```/boot/firmware``` direktorij.
 
-Prevedene izvorne datoteke stvaraju binarnu datoteku s nastavkom *.dtb* koja se naziva *Device Tree Blob*. U Raspberry Pi kontekstu ovo se naziva još i bazno stablo uređaja. Međutim u direktoriju */boot/firmware/overlays* nalaze se posebne binarne datoteke s nastavkom *.dtbo* koje se još nazivaju *Device Tree Overlay*. Ove datoteke mogu dinamički izmijeniti binarnu datoteku baznog stabla uređaja (*.dtb*) proširujući ili izmjenjujući joj definicije uređaja definicije uređaja koji trenutačno postoje u stablu. Datoteka *.dtbo* se isto kao i datoteka *.dtb* prevodi iz datoteka *dts* i *dtsi*, ali s posebnim zastavicama.
+## Izgradnja vlastite Linux jezgre
 
-U slučaju Raspberry Pi mikroračunala, o tome koje *overlay* datoteke (*.dtbo*) će modificirati bazno stablo (*.dtb*) će odlučiti *firmware* *start\*.elf* čitajući reviziju pločice iz OTP memorije. Ako korisnik želi ručno uključiti neki *overlay* ili omogućiti odnosno onemogućiti neku periferiju u baznom stablu, to može napraviti upisujući u datoteku */boot/firmware/config.txt* odgovarajuće parametre.
+[Linux jezgra Raspberry Pi OS-a](https://www.raspberrypi.com/documentation/computers/linux_kernel.html) je modificirana inačica Linux jezgre s potpunom podrškom za Raspberry Pi hardver. Sadrži specifične upravljačke programe i proširenja za stablo uređaja za Raspberry Pi hardver. Raspberry Pi inačica jezgra prati uglavnom stabilne LTS (Long Term Support) Linux inačice, ali ne u stvarnom vremenu zbog dodatnog testiranja. Trenutačna inačica jezgre može se vidjeti naredbom ```sudo uname -r```. Izvorni kod Raspberry Pi OS Linux jezgre nalazi se [ovdje](https://github.com/raspberrypi/firmware/). Ažuriranje jezgre preko APT-a radi se naredbama ```sudo apt update``` i ```sudo apt full-upgrade```.
 
-Kako je već navedeno, *firmware* *start\*.elf* kombinira *\*.dtb*, *\*.dtbo* i odgovarajuće parametre */boot/firmware/config.txt* datoteke kako bi stvorio konačno stablo uređaja u memoriji čiji pokazivač prosljeđuje Linux jezgri kao parametar.
+### Izgradnja jezgre na Raspberry Pi 4B mikroračunalu
 
-Više informacija o */boot/firmware/config.txt* parametrima koje mogu utjecati na bazno stablo uređaja može se naći [ovdje](https://github.com/raspberrypi/linux/blob/rpi-4.1.y/arch/arm/boot/dts/overlays/README).
-
-## Linux jezgra
-
-[Linux jezgra Raspberry Pi OS-a](https://www.raspberrypi.com/documentation/computers/linux_kernel.html) za razliku od originalne Linux jezgre kasni s izbacivanjem nove inačice zbog dodatnog testiranja i optimizacije za Raspberry Pi hardver. Kada izađe nova inačica originalne jezgre, Raspberry Pi Foundation stvara novu granu *next* na [GitHub-u](https://github.com/raspberrypi/firmware/) gdje se isprobavaju nove značajke radi utvrđivanja njihove ispravnosti. Kada se utvrdi da je nova inačica jezgre spremna za Raspberry Pi, grana *next* se spaja s granom *master*.
-
-Grana *master* sadrži najnoviji potvrđeni kod za Linux jezgre za Raspberry Pi. Kada jezgra prođe još dodatna testiranja, ta se jezgra kopira na granu *stable* što je označava najnovijom stabilnom inačicom.
-
-Ažuriranjem Raspberry Pi OS-a s naredbom ```sudo apt full-upgrade```, Linux jezgra se automatski ažurira na najnoviju stabilnu inačicu. Ako se želi instalirati nestabilna inačica jezgre, potrebno je to napraviti ručno. Kod Raspberry Pi OS-a Linux jezgra se nalazi u */boot/firmware* direktoriju. U slučaju Raspberry Pi 4B mikroupravljača to je datoteka *kernel8.img*.
-
-Moguće je [izgraditi prilagođenu jezgru](https://www.raspberrypi.com/documentation/computers/linux_kernel.html#building), uređujući joj razne značajke.
-
-### Izgradnja prilagođene jezgre na Raspberry Pi OS-u za Raspberry Pi 4B mikroračunalo
-
-Ovaj postupak gradi prilagođenu Linux jezgru na Raspberry Pi OS-u koji se pokreće na Raspberry Pi 4B mikroračunalu. Postupak može znatno potrajati jer se jezgra gradi koristeći resurse Raspberry Pi 4B mikroračunala koji su slabiji nego resursi prosječnog osobnog računala. Dakle, gradi se jezgra za ARM64 arhitekturu na ARM64 arhitekturi.
-
-Prije izgradnje, potrebno je preuzeti potrebne pakete i alate za izgradnju:
+Za izgradnju Linux jezgre za Raspberry Pi 4B mikroračunalo ARM64 arhitekture, prvo je potrebno preuzeti alate za izgradnju jezgre:
 
 ```
 sudo apt install git bc bison flex libssl-dev make libncurses5-dev
 ```
 
-Zatim je potrebno premjestiti se u korisnikovom *home* direktoriju i preuzeti izvorni kod zadnje inačice Linux jezgre Raspberry Pi OS-a:
+Zatim je potrebno preuzeti izvorni kod najnovije inačice Raspberry Pi OS Linux jezgre u korisnikovom *home* direktoriju:
 
 ```
 cd ~/
 git clone --depth=1 https://github.com/raspberrypi/linux
 ```
-
-Naredba dohvaća GitHub repozitorij bez povijesti *commitova*, ako se želi dohvatiti cijeli repozitorij s povijesti *commitova*, potrebno je ukloniti zastavicu ```--branch```. Veličina cijele povijesti je dosta velika pa je potrebno ustanoviti ima li pohrana na Raspberry Pi mikroračunalu dovoljno mjesta za cijeli repozitorij.
 
 Izgradnja uobičajene konfiguracije za 64 bitnu Linux jezgru Raspberry Pi OS-a koji se pokreće na Raspberry Pi 4B mikroračunalu radi se sljedećim naredbama:
 
@@ -155,29 +127,29 @@ KERNEL=kernel8
 make bcm2711_defconfig
 ```
 
-Naredba će spremiti konfiguraciju u *.config* datoteku. Daljnja konfiguracija jezgre koja će se također spremati u *.config* datoteku moguća je naredbom:
+Naredba će spremiti konfiguraciju u ```.config``` datoteku. Ako se želi dalje uređivati značajke jezgre koje će se spremati u ```.config``` datoteku, to se može naredbom:
 
 ```
 make menuconfig
 ```
 
-Konačno, izgradnja 64 bitne jezgre i stabla uređaja GCC prevodiocem i DTC prevodiocem radi se naredbom:
+Izgradnja 64 bitne jezgre, jezgrenih modula i stabla uređaja GCC i DTC prevodiocima radi se naredbom:
 
 ```
 make -j6 Image.gz modules dtbs
 ```
 
-Parametar ```-j6``` označava broj procesa koji će paralelno raditi na procesu prevođenja. Optimalan broj je 1.5 puta broj jezgri procesora nad kojim se izvodi prevođenje. U slučaju Raspberry Pi 4B mikroračunala koristi se četverojezgreni ARM Cortex-A72 procesor.
+Opcija ```-j6``` označava broj paralelnih procesa koji će sudjelovati u izgradnji što je u ovom slučaju 6. Za izgradnju na Raspberry Pi mikroračunalima, preporuka je postaviti broj koji je 1.5 puta veći nego broj procesorskih jezgri koji se može vidjeti naredbom ```nproc```. Nakon uspješne izgradnje, potrebno je:
 
-Nakon izgradnje potrebno je instalirati nove jezgrene module u */lib/modules/[nova verzija jezgre]* naredbom:
+- kopirati nove jezgrene module u ```/lib/modules/<nova verzija jezgre>``` direktorij
+- stvoriti sigurnosnu kopiju stare jezgre u ```/boot/firmware``` direktoriju
+- kopirati novu jezgru i stablo uređaja u ```/boot/firmware``` direktorij
+- kopirati overlay datoteke i README tekstualnu datoteku u ```/boot/firmware/overlay``` direktorij
+
+To se može napraviti sljedećim naredbama:
 
 ```
 sudo make -j6 modules_install
-```
-
-Sljedeće što je potrebno je stvoriti sigurnosnu kopiju stare jezgre u */boot/firmware* direktoriju, kopirati novu jezgru i bazno stablo (datoteka *\*.dtb*) u */boot/firmware* direktorij te kopirati *overlay* datoteke (datoteke *\*.dtbo*) i *README* tekstualnu datoteku u */boot/firmware/overlays* direktorij:
-
-```
 sudo cp /boot/firmware/$KERNEL.img /boot/firmware/$KERNEL-backup.img
 sudo cp arch/arm64/boot/Image.gz /boot/firmware/$KERNEL.img
 sudo cp arch/arm64/boot/dts/broadcom/*.dtb /boot/firmware/
@@ -185,33 +157,25 @@ sudo cp arch/arm64/boot/dts/overlays/*.dtb* /boot/firmware/overlays/
 sudo cp arch/arm64/boot/dts/overlays/README /boot/firmware/overlays/
 ```
 
-Za kraj, potrebno je ponovno pokrenuti Raspberry Pi 4B mikroračunalo naredbom:
+Za kraj, potrebno je ponovno pokrenuti mikroračunalo naredbom ```sudo reboot```.
 
-```
-sudo reboot
-```
+### Izgradnja jezgre za Raspberry Pi 4B mikroračunalo unakrsnim prevođenjem
 
-Nakon ponovnog pokretanja Raspberry Pi OS-a, nova jezgra bi trebala biti pokrenuta.
-
-### Izgradnja jezgre na Arch Linuxu za Raspberry Pi OS-u
-
-Ovaj postupak gradi prilagođenu Linux jezgru na Arch Linuxu koji se pokreće na osobnom računalu. Jezgra se gradi koristeći resurse osobnog računala koji su u prosjeku znatno brži nego resursi Raspberry Pi 4B mikroračunala. Dakle, gradi se jezgra za ARM64 arhitekturu na AMD64 arhitekturi.
-
-Prije izgradnje, potrebno je preuzeti potrebne pakete i alate za izgradnju:
+Za izgradnju Linux jezgre za Raspberry Pi 4B mikroračunalo ARM64 arhitekture **na računalu x86 arhitekture koje pokreće Arch Linux**, prvo je potrebno preuzeti alate za izgradnju jezgre:
 
 ```
 sudo pacman -Syu
 sudo pacman -S git bc bison flex openssl make glibc ncurses aarch64-linux-gnu-gcc
 ```
 
-Zatim je potrebno premjestiti se u korisnikovom *home* direktoriju i preuzeti izvorni kod zadnje inačice Linux jezgre Raspberry Pi OS-a:
+Zatim je potrebno preuzeti izvorni kod najnovije inačice Raspberry Pi OS Linux jezgre u korisnikovom *home* direktoriju:
 
 ```
 cd ~/
 git clone --depth=1 https://github.com/raspberrypi/linux
 ```
 
-Izgradnja uobičajene konfiguracije za 64 bitnu Linux jezgru Raspberry Pi OS-a koji se pokreće na Raspberry Pi 4B mikroračunalu i sprema se u *.config* datoteku radi se sljedećim naredbama:
+Izgradnja uobičajene konfiguracije za 64 bitnu Linux jezgru Raspberry Pi OS-a koji se pokreće na Raspberry Pi 4B mikroračunalu radi se sljedećim naredbama:
 
 ```
 cd linux
@@ -219,33 +183,38 @@ KERNEL=kernel8
 make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- bcm2711_defconfig
 ```
 
-Naredba će spremiti konfiguraciju u *.config* datoteku. Daljnja konfiguracija jezgre koja će se također spremati u *.config* datoteku moguća je naredbom:
+Naredba će spremiti konfiguraciju u ```.config``` datoteku. Ako se želi dalje uređivati značajke jezgre koje će se spremati u ```.config``` datoteku, to se može naredbom:
 
 ```
 make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- menuconfig
 ```
 
-Konačno, izgradnja 64 bitne jezgre i stabla uređaja unakrsnim GCC prevodiocem i DTC prevodiocem radi se naredbom:
+Izgradnja 64 bitne jezgre, jezgrenih modula i stabla uređaja GCC i DTC prevodiocima radi se naredbom:
 
 ```
-make -j[broj procesa] ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image modules dtbs
+make -j<broj procesa> ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image modules dtbs
 ```
 
-Broj procesa koji će paralelno raditi na procesu prevođenja može biti broj jezgri AMD64 procesora puta 2 plus 1. Broj jezgri može se dobiti iščitavanjem izlaza naredbe ```lscpu```.
+Opcija ```-j<broj procesa>``` označava broj paralelnih procesa koji će sudjelovati u izgradnji. Za izgradnju na osobnom računalu, preporuka je postaviti broj koji je od 1 do 1.5 puta veći nego broj procesorskih jezgri koji se može vidjeti naredbom ```nproc```. Nakon uspješne izgradnje, potrebno je:
 
-Nakon izgradnje potrebno je umetnuti SD karticu (ili neku drugu pohranu) koja na sebi ima instaliran Raspberry Pi OS i instalirati nove jezgrene module u */lib/modules/[nova verzija jezgre]* na *root* particiju SD kartice. Dakle, potrebno je montirati *root* particiju na lokaciju */mnt/rpi-root* i instalirati module na */mnt/rpi-root/lib/modules/[nova verzija jezgre]*:
+- kopirati nove jezgrene module u ```/lib/modules/<nova verzija jezgre>``` direktorij
+- stvoriti sigurnosnu kopiju stare jezgre u ```/boot/firmware``` direktoriju
+- kopirati novu jezgru i stablo uređaja u ```/boot/firmware``` direktorij
+- kopirati overlay datoteke i README tekstualnu datoteku u ```/boot/firmware/overlay``` direktorij
+
+Prije izvršenja potrebnih naredbi, potrebno je umetnuti SD karticu u računalo (preko čitača SD kartice) gdje se nalazi instaliran Raspberry Pi OS koji se pokreće na Raspberry Pi 4B mikroračunalu. Zatim je potrebno odmontirati automatski montirane particije te SD kartice te montirati **root** particiju na ```/mnt/rpi-root``` i **boot** na ```/mnt/rpi-root/boot/firmware```.
 
 ```
-sudo umount [datoteka uređaja koja predstavlja SD karticu]*
+sudo umount /dev/<datoteka uređaja koja predstavlja SD karticu>*
 sudo mkdir /mnt/rpi-root
-sudo mount [datoteka uređaja koja predstavlja SD karticu]2 /mnt/rpi-root
-sudo env PATH=$PATH make -j[broj procesa] ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- INSTALL_MOD_PATH=/mnt/rpi-root modules_install
+sudo mount /dev/<datoteka uređaja koja predstavlja SD karticu>2 /mnt/rpi-root
+sudo mount /dev/<datoteka uređaja koja predstavlja SD karticu>1 /mnt/rpi-root/boot/firmware
 ```
 
-Sljedeće što je potrebno je stvoriti sigurnosnu kopiju stare jezgre u */boot/firmware* direktoriju, kopirati novu jezgru i bazno stablo (datoteka *\*.dtb*) u */boot/firmware* direktorij te kopirati *overlay* datoteke (datoteke *\*.dtbo*) i *README* tekstualnu datoteku u */boot/firmware/overlays* direktorij. Dakle, potrebno je montirati *firmware* particiju na lokaciju */mnt/rpi-root/boot/firmware* te napraviti stvoriti sigurnosnu kopiju stare jezgre u */mnt/rpi-root/boot/firmware/* direktoriju, kopirati novu jezgru i bazno stablo u */mnt/rpi-root/boot/firmware/* direktorij te kopirati *overlay* datoteke i *README* tekstualnu datoteku u */mnt/rpi-root/boot/firmware/overlays/* direktorij:
+Tek sada se može izvršiti:
 
 ```
-sudo mount [datoteka uređaja koja predstavlja SD karticu]1 /mnt/rpi-root/boot/firmware
+sudo env PATH=$PATH make -j<broj procesa> ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- INSTALL_MOD_PATH=/mnt/rpi-root modules_install
 sudo cp /mnt/rpi-root/boot/firmware/$KERNEL.img /mnt/rpi-root/boot/firmware/$KERNEL-backup.img
 sudo cp arch/arm64/boot/Image /mnt/rpi-root/boot/firmware/$KERNEL.img
 sudo cp arch/arm64/boot/dts/broadcom/*.dtb /mnt/rpi-root/boot/firmware/
@@ -253,11 +222,12 @@ sudo cp arch/arm64/boot/dts/overlays/*.dtb* /mnt/rpi-root/boot/firmware/overlays
 sudo cp arch/arm64/boot/dts/overlays/README /mnt/rpi-root/boot/firmware/overlays/
 ```
 
-Prije uklanjanja SD kartice (ili neke druge pohrane) iz osobnog računala, potrebno je odmontirati sve dosad montirane particije SD kartice:
+Za kraj, potrebno je odmontirati particije SD kartice i umetnuti SD karticu u Raspberry Pi 4B mikroupravljač. Naredbe za demontiranje particija i izbacivanje SD kartice su:
 
 ```
 sudo umount /mnt/rpi-root/boot/firmware/
 sudo umount /mnt/rpi-root/
+sudo rmdir /mnt/rpi-root/
+sudo eject /dev/<datoteka uređaja koja predstavlja SD karticu>
 ```
 
-Nakon umetanja SD kartice u Raspberry Pi 4B mikroračunalo i pokretanja Raspberry Pi OS-a, nova jezgra bi trebala biti pokrenuta.
