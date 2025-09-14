@@ -1,103 +1,147 @@
-# UPRAVLJANJE GPIO PINOVIMA
+# GPIO PINOVI
 
-Raspberry Pi 4B pločica ima [40 pinski GPIO konektor](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#gpio-and-the-40-pin-header) čiji je raspored GPIO pinova, napajanja i uzemljenja jednak svim ostalim Raspberry Pi pločicama. Ovo osigurava kompatibilnost svih Raspberry Pi pločica proširivim modulima.
+Raspberry Pi 4B PCB pločica sadrži [40 pinski GPIO konektor](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#gpio) čiji je raspored GPIO pinova jednak svim starijim pločicama čime se osigurava kompatibilnost s proširivim modulima.
 
-Svaki GPIO pin se može konfigurirati kao ulaz, izlaz ili kao neka alternativna funkcija (I2C, SPI, PWM, UART, ...) ovisno o kojem GPIO pinu se radi.
+GPIO pinovi se mogu konfigurirati kao ulazi, izlazi ili kao neka specijalizirana alternativna funkcija (I2C pin, SPI pin, PWM pin, UART pin, ...).
 
-GPIO pin označen kao izlaz u stanju visoko daje 3.3 V dok u stanju nisko daje 0 V.
+Ako je pin softverski konfiguriran kao izlazni, logička razina visoko daje na pinu napon od 3.3 V, a logička razina nisko daje na pinu napon od 0 V.
 
-GPIO pin označen kao ulaz za stanje visoko prima 3.3 V dok za stanje nisko prima 0 V.
-GPIO 2 i GPIO 3 imaju fiksirane interne *pull-up* otpornike.
+Ako je pin softverski konfiguriran kao ulazni, maksimalni dozvoljeni ulazni napon je 3.3 V, a minimalni 0 V. Na svakom pinu moguće je i softverski konfigurirati interne pull-up i pull-down otpornike izuzev pinova GPIO 2 i GPIO 3 gdje su fiksirani pull-up otpornici.
 
-Kako bi korisnik mogao pristupiti GPIO pinovima, mora biti dodan u grupu *gpio*. Zadani korisnik koji se stvorio *userconf.txt* datotekom ili ručno prvim pokretanjem je već automatski u toj grupi. Međutim, ako to nije tako jednostavno ga se može dodati naredbom:
+Kako bi korisnik softverski mogao konfigurirati GPIO pinove, on mora biti dodan u grupu ```gpio```. Inicijalno stvoren korisnik, onaj definiran u ```userconf.txt``` datoteci ili stvoren pri prvoj inicijalizaciji, je već automatski dodan. Naredba za dodavanje korisnika u grupu ```gpio``` je:
 
 ```
-sudo usermod -a -G gpio [korisničko ime]
+sudo usermod -a -G gpio <korisničko ime>
 ```
 
-## Adrese GPIO pinova
+## Konfiguracija maksimalne izlazne snage GPIO pinova
 
-Adrese GPIO skupa pinova:
+Postoje tri grupe GPIO pinova. Adrese u kojoj se upisuju 32-bitne postavke snage za te grupe GPIO pinova su:
 
-- 0x7e10002c = GPIO pinovi od 0 do 27 (**ovi se nalaze izloženi na 40 pinskom konektoru**)
-- 0x7e100030 = GPIO pinovi od 28 do 45
-- 0x7e100034 = GPIO pinovi od 46 do 53
+- 0x7e10002c - GPIO pinovi 0-27 - **ovi se nalaze na 40 pinskom konektoru**
+- 0x7e100030 - GPIO pinovi 28-45
+- 0x7e100034 - GPIO pinovi 46-53
 
-Bitovi na svakoj adresi imaju značenja:
+Polja bitova na adresama imaju sljedeće značenje:
 
-- bitovi od 0 do 2
-	- izlazna snaga GPIO sklopa napajanja (*eng. Drive Strength*)
-	- ime polja je *DRIVE*
-- bit 3
-	- omogućuje histerezu na ulazu (*eng. Input Hysteresis*)
-	- služi za izbjegavanje šuma na ulazu, promjena stanja se očitava samo kad se dosegne određeni napon
-	- 1 za omogućeno, 0 za onemogućeno
-	- ime polja je *HYST*
+- bitovi 31-24
+	- ime polja: PASSWRD, moguće samo pisanje
+	- služi za zaštitu od slučajnog pisanja, mora imati vrijednost 0x5A kada se nešto upisuje na adresu
+	- vrijednost pri resetiranju: 0x0
+- bitovi 23-5
+	- rezervirano
 - bit 4
-	- omogućuje ograničenu brzine promjene napona tijekom promjene stanja (*eng. Slew Rate*)
-	- 1 za omogućeno, 0 za onemogućeno
-	- ime polja je *SLEW*
-- bitovi od 5 do 23
-	- rezervirani
-- bitovi od 24 do 31
-	- tzv. zaporka, služi kao zaštita za pisanje na adresu
-	- ako vrijednost bitova vrijednosti koja se piše na adresi nije jednaka 0x5A onda se sama vrijednost na adresu neće upisati
-	- ime polja je *PASSWRD*
+	- ime polja: SLEW, moguće pisanje i čitanje
+	- služi za postavljanje brzine promjene stanja:
+		- 0x0 - najbrže što može
+		- 0x1 - ograničena brzina za smanjene smetnji
+	- vrijednost pri resetiranju: 0x1
+- bit 3
+	- ime polja: HYST, moguće pisanje i čitanje
+	- služi za postavljanje histereze za ulazne pinove:
+		- 0x0 - onemogući histerezu
+		- 0x1 - omogući histerezu, pomaže pri sprječavanju lažnih očitanja pri smetnjama
+	- vrijednost pri resetiranju: 0x1
+- bitovi 2-0
+	- ime polja: DRIVE, moguće pisanje i čitanje
+	- služi za postavljanje maksimalne struje koju GPIO pin može isporučiti sa stabilnim izlaznim naponom:
+		- 0x0 - 1 mA
+		- 0x1 - 2 mA
+		- 0x2 - 3 mA
+		- 0x3 - 4 mA
+		- 0x4 - 5 mA
+		- 0x5 - 6 mA
+		- 0x6 - 7 mA
+		- 0x7 - 8 mA
+	- vrijednost pri resetiranju: 0x3
 
-### Snaga GPIO sklopa napajanja
+Specifikacije o naponima GPIO pinova nalaze se [ovdje](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#voltage-specifications).
 
-Potrebno je spomenuti pojam izlazne snage GPIO sklopa napajanja (*eng. Drive Strength*). Za navedene grupe pinova pinova moguće je postaviti maksimalnu izlaznu struju za koju se garantira da će izlazni napon biti stabilan odnosno da će izlazni napon biti jednak specifikaciji. Vrijednosti koje se mogu upisati na GPIO adrese na bitovima 2:0 kod Raspberry Pi 4B mikroračunala mogu biti sljedeće:
+## Konfiguracija samih GPIO pinova
 
-- 0 - garantira stabilnost napona ako se na izlazu povuče maksimalno 1 mA
-- 1 - garantira stabilnost napona ako se na izlazu povuče maksimalno 2 mA
-- 2 - garantira stabilnost napona ako se na izlazu povuče maksimalno 3 mA
-- 3 - garantira stabilnost napona ako se na izlazu povuče maksimalno 4 mA
-- 4 - garantira stabilnost napona ako se na izlazu povuče maksimalno 5 mA
-- 5 - garantira stabilnost napona ako se na izlazu povuče maksimalno 6 mA
-- 6 - garantira stabilnost napona ako se na izlazu povuče maksimalno 7 mA
-- 7 - garantira stabilnost napona ako se na izlazu povuče maksimalno 8 mA
+Konfiguracija GPIO pinova može se napraviti preko konfiguracijske datoteke ```/boot/firmware/config.txt```, naredbi kao što su primjerice ```pinctrl```, ```raspi-config``` i slično ili pak preko vlastitih programa koji koriste određene biblioteke kao što su:
 
-**Maksimalna struja koja se može povući kroz pinove bez garantiranog oštećenja je 16 mA. Za spajanje svjetleće diode ili tipkala preporuka je koristiti otpornike. Ne preporučuje se izravno pokretati motore preko GPIO pinova.**
+- C biblioteka ```pigpio``
+- Python biblioteka ```RPi.GPIO```
+- Python biblioteka ```gpiozero```
 
-### Specifikacije napona i struje GPIO pinova
+Primjeri korištenja biblioteka mogu se naći [ovdje](direct-gpio-control).
 
-U slučaju da je pin postavljen kao ulaz:
+### Korištenje pinctrl naredbe
 
-- dok je na ulazu detektiran maksimalan napon od 0.8 V, registrirat će se niska razina
-- dok je na ulazu detektiran minimalan napon od 2 V i ako je histereza omogućena, registrirat će se visoka razina
-
-U slučaju da je pin postavljen kao izlaz:
-
-- kada je na izlazu postavljena niska razina uz izlaznu snagu GPIO sklopa postavljenu na 3 (4 mA), maksimalni mogući izlazni napon je 0.4 V uz izlaznu struju od -4 mA
-- kada je na izlazu postavljena visoka razina uz izlaznu snagu GPIO sklopa postavljenu na 3 (4 mA), minimalni mogući izlazni napon je 2.6 V uz izlaznu struju od 4 mA
-
-- kada je na izlazu postavljena niska razina uz izlaznu snagu GPIO sklopa postavljenu na 7 (8 mA), minimalna izlazna struja je 7 mA uz izlazni napon od 0.4 V
-- kada je na izlazu postavljena visoka razina uz izlaznu snagu GPIO sklopa postavljenu na 7 (8 mA), minimalna izlazna struja je 7 mA uz izlazni napon od 2.6 V
-
-- minimalna vrijednost *pull-up* otpornika može biti 33 kOhma, a maksimalna 73 kOhma
-- minimalna vrijednost *pull-down* otpornika može biti 33 kOhma, a maksimalna 73 kOhma
-
-## Biblioteka za upravljanje pinovima
-
-C biblioteka koja će se koristiti za upravljanje pinovima je [*pigpio*](https://abyz.me.uk/rpi/pigpio/index.html). Ova datoteka se već nalazi instalirana na Raspberry Pi OS-u. U slučaju da nije, potrebno ju je preuzeti naredbama:
+Naredba ```pinctrl``` je prvenstveno namijenjena je za debugiranje. Ispis stanja GPIO pinova od 0 do 28 može se napraviti naredbom:
 
 ```
-sudo apt update
-sudo apt full-upgrade
-sudo apt install pigpio
+pinctrl get 0-28
 ```
 
-Ako se želi koristiti neki viši programski jezik za upravljanje GPIO pinovima, može se koristiti Python 3 i biblioteka [*gpiozero*](https://gpiozero.readthedocs.io/en/latest/index.html).
+Postavljanje određenog GPIO pina kao izlaznog bez internih pull-up i pull-down otpornika može se napraviti naredbom:
 
-### Načini upravljanja GPIO pinova
+```
+pinctrl set <broj GPIO pina> op pn
+```
 
-Dva su načina upravljanja GPIO pinovima uz pomoć *pigpio* biblioteke: [izravno](https://abyz.me.uk/rpi/pigpio/index.html) i [preko *pigpiod* servisa](https://abyz.me.uk/rpi/pigpio/pigpiod.html).
+Postavljanje određenog GPIO pina u stanje visoko odnosno nisko može se napraviti naredbom:
 
-**Izravni način je jednostavniji, ali samo jedan proces može manipulirati GPIO pinovima, inače bi dolazilo do konflikata.**
+```
+pinctrl set <broj GPIO pina> <dh|dl>
+```
 
-Primjeri za izravno upravljanje GPIO pinova nalaze se [ovdje](direct-gpio-control).
+Postavljanje određenog GPIO pina kao ulaznog s internim pull-up ili pull-down otpornikom može se napraviti naredbom:
 
-**Servis način je mrvicu kompleksniji, ali nema problem s konfliktima jer mu procesi šalju zahtjeve za GPIO, a on njime upravlja.**
+```
+pinctrl set <broj GPIO pina> ip <pu|pd>
+```
 
-Servis *pigpiod* nudi upravljanje GPIO pinovima preko mreže, slušajući port 8888 i odgovarajući na zahtjeve. Postoji i [Python modul](https://abyz.me.uk/rpi/pigpio/python.html) za slanje zahtjeva *pigpiod* servisu.
+Izlistavanje alternativnih funkcija za GPIO pinove od 0 do 28 može se napraviti naredbom:
+
+```
+pinctrl -c bcm2711 0-28
+```
+
+Postavljanje alternativne funkcije GPIO pinu može se napraviti naredbom:
+
+```
+pinctrl set <broj GPIO pina> <a0|a1|a2|a3|a4|a5>
+```
+
+Postavljanje pina kao izlaza ili ulaza poništava postavljenu alternativnu funkciju. Dodatnu pomoć i informacije u vezi pinctrl naredbe može se dobiti naredbom ```pinctrl help```.
+
+### Konfiguracija GPIO pinova uz pomoć config.txt datoteke
+
+Postavljanje [konfiguracije pinova](https://www.raspberrypi.com/documentation/computers/config_txt.html#gpio-control) može se napraviti kroz datoteku ```/boot/firmware/config.txt``` direktivom ```gpio```. Konfiguracija će se postaviti pri ponovnom pokretanju mikroračunala.
+
+Opcije su slične kao i kod ```pinctrl``` naredbe. Primjerice, konfiguracija GPIO pina kao izlaza i postavljanje mu stanja može se napraviti direktivom:
+
+```
+gpio=<broj GPIO pina>=op,<dh|dl>
+```
+
+Konfiguracija GPIO pina kao ulaza i postavljanje mu interni pull-up ili pull-down otpornik može se napraviti naredbom:
+
+```
+gpio=<broj GPIO pina>=ip,<pu|pd>
+```
+
+Konfiguracija alternativne funkcija GPIO pinu može se napraviti direktivom:
+
+```
+gpio=<broj GPIO pina>=<a0|a1|a2|a3|a4|a5>
+```
+
+#### Konfiguracija preko overlay datoteka
+
+GPIO pinovi se mogu posebno konfigurirati preko overlay datoteka koje uređuju stablo uređaja tijekom pokretanja mikroračunala. Ove overlay datoteke se nalaze u ```/boot/firmware/overlays/``` direktoriju. Primjena overlay datoteke nad stablom uređaja radi se direktivom ```dtoverlay``` u ```/boot/firmware/config.txt``` datoteci, a upute za specifične overlay datoteke nalaze se [ovdje](https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README).
+
+Za neke overlay datoteke, Linux jezgra će učitati i odgovarajuće upravljačke programe ako postoje.
+
+Primjerice, ako se želi primijeniti overlay datoteka koja će postaviti GPIO pinove 19, 20 i 21 kao SPI MOSI, SPI MISO i SPI SCLK (njihove alternativne funkcije) te postaviti tri pina po izboru kao SPI CS pinove, to je moguće dodavanjem direktive:
+
+```
+dtoverlay=spi1-3cs=cs0_pin=<GPIO pin za CS0>,cs1_pin=<GPIO pin za CS1>,cs2_pin=<GPIO pin za CS2>
+```
+
+GPU firmware ```start.elf``` će učitati ```/boot/firmware/bcm2711-rpi-4-b.dtb``` stablo uređaja i primijeniti overlay ```/boot/firmware/overlays/spi1-3cs.dtbo``` nad njime. Kasnije će Linux jezgra učitati SPI upravljački program i ponuditi 3 sučelja u obliku datoteka uređaja za komunikaciju: ```/dev/spidev1.0```, ```/dev/spidev1.1``` i ```/dev/spidev1.2```.
+
+Datoteka ```config.txt``` se parsira slijedno, odozgo prema dolje, kasniji parametri prepisuju ranije u slučaju konflikata u postavkama pinova.
 
