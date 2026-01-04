@@ -122,10 +122,35 @@ unset HASHED_PASSWORD
 
 #### Postavljanje imena mikroračunala
 
-Inicijalno ime mikroračunala (*eng. hostname*) može se postaviti naredbom:
+Za olakšano korištenje sljedećih naredbi ime računala može se postaviti u varijablu okruženja naredbom:
 
 ```
-echo "<ime mikroračunala>" | tee /mnt/rpi-root/etc/hostname
+RPI_HOSTNAME="<ime mikroračunala>"
+```
+
+Inicijalno ime mikroračunala (*eng. hostname*, datoteka `/etc/hostname`) može se postaviti naredbom:
+
+```
+echo "$RPI_HOSTNAME" | sudo tee /mnt/rpi-root/etc/hostname
+```
+
+Također, potrebno je postaviti i ispravno razlučivanje ime mikroračunala (datoteka `/etc/hosts`) naredbom:
+
+```
+sudo tee /mnt/rpi-root/etc/hosts > /dev/null << EOF
+127.0.0.1	localhost
+::1		localhost ip6-localhost ip6-loopback
+ff02::1		ip6-allnodes
+ff02::2		ip6-allrouters
+
+127.0.1.1	$RPI_HOSTNAME
+EOF
+```
+
+Varijabla okruženja može se obrisati naredbom:
+
+```
+unset RPI_HOSTNAME
 ```
 
 #### Omogućivanje SSH servisa
